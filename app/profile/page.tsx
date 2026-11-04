@@ -87,9 +87,9 @@ export default function ProfilePage() {
   }
 
   const fieldStyle = { display: "block", width: "100%", marginTop: 7, padding: 13, border: "1px solid #eadcde", borderRadius: 12, fontSize: 16, background: "#fff", color: "#29222a" } as const;
-  return <main style={{ minHeight: "100vh", background: "#fff8f8", color: "#29222a", padding: "32px 18px", fontFamily: "Arial, sans-serif" }}>
+  return <main style={{ minHeight: "100vh", background: "#fff5f5", color: "#29222a", padding: "32px 18px", fontFamily: "Arial, sans-serif" }}>
     <div style={{ maxWidth: 560, margin: "0 auto" }}>
-      <a href="/" style={{ color: "#e64c5f", textDecoration: "none", fontSize: 30, fontWeight: 800 }}>♥ ehdate.</a>
+      <a href="/" style={{ color: "#d80621", textDecoration: "none", fontSize: 30, fontWeight: 800 }}>♥ ehdate.</a>
       <section style={{ marginTop: 35, background: "white", padding: "30px 25px", borderRadius: 24, boxShadow: "0 12px 35px #3a1d270c" }}>
         <h1 style={{ marginTop: 0, fontSize: 32 }}>Your dating profile</h1>
         <p style={{ color: "#736871", lineHeight: 1.5 }}>Tell us a little about yourself. Your profile is private while we build discovery.</p>
@@ -105,10 +105,10 @@ export default function ProfilePage() {
             <option value="">Select province or territory</option>{provinces.map(([code, name]) => <option value={code} key={code}>{name}</option>)}
           </select></label>
           <label>About me (optional)<textarea style={{ ...fieldStyle, minHeight: 120, resize: "vertical" }} maxLength={1000} placeholder="A little about you, your interests, and what makes you smile…" value={profile.bio} onChange={e => setField("bio", e.target.value)}/></label>
-          <button disabled={saving} type="submit" style={{ border: 0, background: "#e64c5f", color: "white", padding: 16, borderRadius: 100, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save my profile"}</button>
+          <button disabled={saving} type="submit" style={{ border: 0, background: "#d80621", color: "white", padding: 16, borderRadius: 100, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save my profile"}</button>
         </form>}
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
-      </section>
+      <p style={{marginTop:24}}><a href="/profile/photos" style={{color:"#d80621",fontWeight:700}}>Manage your profile photos →</a></p></section>
     </div>
   </main>;
 }
