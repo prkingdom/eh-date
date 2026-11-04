@@ -58,9 +58,9 @@ export default function AccountPage() {
   }
 
   return (
-    <main style={{minHeight:"100vh",background:"#fff9f7",padding:"32px 20px",fontFamily:"Arial, sans-serif",color:"#24232b"}}>
+    <main style={{minHeight:"100vh",background:"#fff5f5",padding:"32px 20px",fontFamily:"Arial, sans-serif",color:"#24232b"}}>
       <div style={{maxWidth:440,margin:"0 auto"}}>
-        <a href="/" style={{textDecoration:"none",color:"#e64c5f",fontSize:30,fontWeight:800}}>♥ ehdate.</a>
+        <a href="/" style={{textDecoration:"none",color:"#d80621",fontSize:30,fontWeight:800}}>♥ ehdate.</a>
         <section style={{background:"white",padding:32,borderRadius:24,marginTop:50,boxShadow:"0 12px 40px #24151b0d"}}>
           {user ? (
             <>
@@ -79,10 +79,10 @@ export default function AccountPage() {
                 {mode === "signup" && <label style={{display:"flex",gap:10,fontSize:14,lineHeight:1.5}}><input type="checkbox" checked={ageConfirmed} onChange={e=>setAgeConfirmed(e.target.checked)}/> I confirm that I am at least 18 years old.</label>}
                 <button type="submit" disabled={busy} style={buttonStyle}>{busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}</button>
               </form>
-              <button type="button" onClick={()=>{setMode(mode === "signup" ? "login" : "signup");setMessage("");}} style={{border:0,background:"transparent",color:"#d44a5b",cursor:"pointer",marginTop:22,fontWeight:700}}>{mode === "signup" ? "Already registered? Sign in" : "New here? Create an account"}</button>
+              <button type="button" onClick={()=>{setMode(mode === "signup" ? "login" : "signup");setMessage("");}} style={{border:0,background:"transparent",color:"#c6001d",cursor:"pointer",marginTop:22,fontWeight:700}}>{mode === "signup" ? "Already registered? Sign in" : "New here? Create an account"}</button>
             </>
           )}
-          {message && <p role="status" style={{lineHeight:1.5,color:"#6f4651",marginTop:18}}>{message}</p>}
+          {message && <p role="status" style={{lineHeight:1.5,color:"#a60020",marginTop:18}}>{message}</p>}
         </section>
         <p style={{textAlign:"center",fontSize:13,color:"#93898f",marginTop:24}}>ehdate is for adults 18+ · Email verification required</p>
       </div>
@@ -90,4 +90,4 @@ export default function AccountPage() {
   );
 }
 const inputStyle = {display:"block",width:"100%",marginTop:8,padding:13,border:"1px solid #e9dadd",borderRadius:10,fontSize:16} as const;
-const buttonStyle = {border:0,background:"#e64c5f",color:"white",padding:"15px 24px",borderRadius:100,fontSize:16,fontWeight:700,cursor:"pointer"} as const;
+const buttonStyle = {border:0,background:"#d80621",color:"white",padding:"15px 24px",borderRadius:100,fontSize:16,fontWeight:700,cursor:"pointer"} as const;
