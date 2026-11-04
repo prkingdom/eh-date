@@ -1,0 +1,3 @@
+export default function Home() {
+ return <main className="page"><header className="header"><a href="/" className="brand">♥ ehdate<span>.</span></a><div className="pill">Made for Canada 🇨🇦</div></header><section className="hero"><div className="eyebrow">A LITTLE MORE LOCAL. A LOT MORE CONNECTION.</div><h1>Canadians <em>Meet Here.</em></h1><p>From coast to coast, ehdate is being built to help Canadians find genuine connections, one YEH at a time.</p><div className="actions"><span className="primary">Coming soon</span><span className="secondary">YEH to something new ♥</span></div></section><footer>© {new Date().getFullYear()} ehdate · Built for Canadians · 18+</footer></main>;
+}
