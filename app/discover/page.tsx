@@ -50,7 +50,7 @@ export default function Discover(){
    if(error||!data||!active)return;
    const paths=data.filter(p=>p.name&&!p.name.startsWith(".")).slice(0,6).map(p=>member.user_id+"/"+p.name);
    const {data:urls}=await supabase.storage.from("profile-photos").createSignedUrls(paths,120);
-   if(active)setPhotoUrls((urls??[]).filter(p=>p.signedUrl).map(p=>p.signedUrl));
+   if(active)setPhotoUrls((urls??[]).map(p=>p.signedUrl).filter((signedUrl): signedUrl is string => typeof signedUrl === "string"));
   }void loadPhotos();return()=>{active=false;};
  },[member?.user_id,visible]);
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
