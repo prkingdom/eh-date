@@ -38,7 +38,7 @@ export default function Discover(){
  }
  async function swipe(target:string,decision:"YEH"|"NEH"){
   if(!supabase||!userId)return;setBusy(true);setMessage("");
-  const {error}=await supabase.from("swipes").insert({swiper_id:userId,target_id:target,decision});
+  const {data:isMatch,error}=await supabase.rpc("submit_swipe",{p_target_id:target,p_decision:decision});
   if(error)setMessage("Could not record your choice: "+error.message);
   else{setMembers(m=>m.filter(p=>p.user_id!==target));setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");}
   setBusy(false);
