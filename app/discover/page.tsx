@@ -6,6 +6,7 @@ const supabase=url&&key?createClient(url,key):null;
 type Member={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;relationship_goal:string|null;interests:string[]|null;personality_prompts:{question:string;answer:string}[]|null};
 const provinces=[["","Anywhere in Canada"],["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],["NL","Newfoundland and Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],["NU","Nunavut"],["ON","Ontario"],["PE","Prince Edward Island"],["QC","Quebec"],["SK","Saskatchewan"],["YT","Yukon"]];
 const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadius:12,background:"white",fontSize:15};
+// Deployment sync: Discovery now shows complete profiles and top-positioned swipe controls.
 export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
