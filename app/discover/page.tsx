@@ -10,7 +10,7 @@ export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false),[sharePhotos,setSharePhotos]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
- const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0);
+ const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[expanded,setExpanded]=useState(false),[settingsOpen,setSettingsOpen]=useState(false);
  async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
@@ -44,7 +44,7 @@ export default function Discover(){
   setBusy(false);
  }
  const member=members[0];
- useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);
+ useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);setExpanded(false);
   async function loadPhotos(){if(!supabase||!member||!visible)return;
    const {data,error}=await supabase.storage.from("profile-photos").list(member.user_id,{limit:6,sortBy:{column:"created_at",order:"asc"}});
    if(error||!data||!active)return;
@@ -60,7 +60,7 @@ export default function Discover(){
   <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
    <h1 style={{fontSize:36,marginBottom:6}}>Discover Canadians ♥</h1>
    <p style={{color:"#75666d",lineHeight:1.5}}>Only members who choose to appear in discovery can be shown here.</p>
-   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,330px),1fr))",gap:24,marginTop:28,alignItems:"start"}}>
+   <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
     <section style={{background:"white",borderRadius:22,padding:24}}>
      <h2 style={{marginTop:0}}>Your discovery settings</h2>
      {loading?<p>Loading…</p>:!userId?<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to continue.</p>:<>
@@ -84,7 +84,7 @@ export default function Discover(){
     </section>
     <section>
      {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Opt in and save your settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
-      <div style={{height:320,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88,position:"relative",overflow:"hidden"}}>
+      <div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88,position:"relative",overflow:"hidden"}}>
        {photoUrls.length?<><img src={photoUrls[photoIndex]} alt={"Profile photo "+(photoIndex+1)+" of "+photoUrls.length} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
        {photoUrls.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",gap:12,alignItems:"center",background:"#0009",padding:"7px 12px",borderRadius:25,fontSize:14}}>
         <button aria-label="Previous photo" onClick={()=>setPhotoIndex(i=>(i+photoUrls.length-1)%photoUrls.length)} style={{border:0,background:"transparent",color:"white",fontSize:22,cursor:"pointer"}}>‹</button>
@@ -95,7 +95,7 @@ export default function Discover(){
       <div style={{padding:24}}>
        <h2 style={{margin:"0 0 10px"}}>{member.display_name}, {member.age}</h2>
        <p style={{color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p>
-       <p style={{lineHeight:1.6}}>{member.bio||"Say hello!"}</p>
+       <p style={{lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:expanded?"none":85,overflow:"hidden"}}>{member.bio||"Say hello!"}</p>\n       <button onClick={()=>setExpanded(v=>!v)} style={{border:0,background:"transparent",color:"#d80621",fontWeight:800,cursor:"pointer",padding:"8px 0"}}>{expanded?"Show less":"View full profile & photos"}</button>\n       {expanded&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:12}}>{photoUrls.map((src,i)=><button key={i} onClick={()=>setPhotoIndex(i)} style={{padding:0,border:i===photoIndex?"3px solid #d80621":"3px solid transparent",borderRadius:10,overflow:"hidden",background:"#eee",cursor:"pointer"}}><img src={src} alt={"View photo "+(i+1)} style={{width:"100%",height:105,objectFit:"cover",display:"block"}}/></button>)}</div>}
       </div>
       <div style={{display:"flex",gap:12,justifyContent:"center",padding:"0 20px 24px"}}>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
