@@ -15,12 +15,18 @@ type Profile = {
   province: string;
   bio: string;
   relationship_goal: string;
+  interested_in: string[];
+  sexual_orientation: string;
+  show_sexual_orientation: boolean;
+  show_interested_in: boolean;
   interests: string[];
   personality_prompts: {question:string;answer:string}[];
 };
 
-const emptyProfile: Profile = { display_name: "", date_of_birth: "", gender: "", city: "", province: "", bio: "", relationship_goal: "", interests: [], personality_prompts: [] };
+const emptyProfile: Profile = { display_name: "", date_of_birth: "", gender: "", city: "", province: "", bio: "", relationship_goal: "", interested_in: [], sexual_orientation: "", show_sexual_orientation: false, show_interested_in: false, interests: [], personality_prompts: [] };
 const promptOptions=["My perfect Sunday looks like…","The way to my heart is…","A green flag I look for…","I get way too excited about…","Together, we could…","My most controversial food opinion…","The quickest way to make me laugh…","I am happiest when…","Two truths and a lie…","A fun fact about me…"];
+const orientationOptions=["Straight","Gay","Lesbian","Bisexual","Pansexual","Asexual","Queer","Questioning","Prefer to self-describe"];
+const interestedOptions=[["Man","Men"],["Woman","Women"],["Non-binary","Non-binary people"]];
 const relationshipGoals=["Long-term relationship","Long-term, open to short","Short-term, open to long","Casual dating","New friends","Figuring it out"];
 const interestOptions=["Fitness","Travel","Cooking","Music","Movies","Hiking","Camping","Dogs","Cats","Sports","Gaming","Reading","Coffee","Foodie","Art","Photography","Dancing","Beach days","Road trips","Volunteering","Gardening","Yoga","Fashion","Live music"];
 const provinces = [
@@ -47,7 +53,7 @@ export default function ProfilePage() {
       if (authError || !authData.user) { setLoading(false); return; }
       setUserId(authData.user.id);
       const { data, error } = await supabase.from("profiles")
-        .select("display_name,date_of_birth,gender,city,province,bio,relationship_goal,interests,personality_prompts")
+        .select("display_name,date_of_birth,gender,city,province,bio,relationship_goal,interested_in,sexual_orientation,show_sexual_orientation,show_interested_in,interests,personality_prompts")
         .eq("user_id", authData.user.id).maybeSingle();
       if (error) setMessage(error.message);
       else if (data) setProfile({
@@ -58,6 +64,10 @@ export default function ProfilePage() {
         province: data.province ?? "",
         bio: data.bio ?? "",
         relationship_goal: data.relationship_goal ?? "",
+        interested_in: data.interested_in ?? [],
+        sexual_orientation: data.sexual_orientation ?? "",
+        show_sexual_orientation: data.show_sexual_orientation ?? false,
+        show_interested_in: data.show_interested_in ?? false,
         interests: data.interests ?? [],
         personality_prompts: Array.isArray(data.personality_prompts)?data.personality_prompts.filter((p:unknown):p is {question:string;answer:string}=>typeof p==="object"&&p!==null&&typeof (p as {question?:unknown}).question==="string"&&typeof (p as {answer?:unknown}).answer==="string").slice(0,3):[]
       });
@@ -114,6 +124,10 @@ export default function ProfilePage() {
       province: profile.province,
       bio: profile.bio.trim() || null,
       relationship_goal: profile.relationship_goal || null,
+      interested_in: profile.interested_in,
+      sexual_orientation: profile.sexual_orientation || null,
+      show_sexual_orientation: profile.show_sexual_orientation,
+      show_interested_in: profile.show_interested_in,
       interests: profile.interests,
       personality_prompts: profile.personality_prompts.filter(p=>p.question&&p.answer.trim()).map(p=>({question:p.question,answer:p.answer.trim()})),
       updated_at: new Date().toISOString()
@@ -137,6 +151,18 @@ export default function ProfilePage() {
           <label>Gender (optional)<select style={fieldStyle} value={profile.gender} onChange={e => setField("gender", e.target.value)}>
             <option value="">Select an option</option><option>Man</option><option>Woman</option><option>Non-binary</option><option>Prefer to self-describe</option><option>Prefer not to say</option>
           </select></label>
+          <div style={{borderTop:"1px solid #f0e1e4",paddingTop:20}}>
+            <h2 style={{fontSize:21,margin:"0 0 8px"}}>Dating preferences ♥</h2>
+            <p style={{fontSize:14,color:"#776b72",lineHeight:1.5}}>Choose who you would like to meet. You can select more than one. Your choices are private unless you choose to show them.</p>
+            <label>Sexual orientation (optional)<select style={fieldStyle} value={profile.sexual_orientation} onChange={e=>setField("sexual_orientation",e.target.value)}>
+              <option value="">Prefer not to specify</option>{orientationOptions.map(o=><option key={o} value={o}>{o}</option>)}
+            </select></label>
+            <label style={{display:"flex",gap:9,alignItems:"center",marginTop:10,fontSize:14}}><input type="checkbox" checked={profile.show_sexual_orientation} onChange={e=>setField("show_sexual_orientation",e.target.checked)}/> Show my orientation on my profile</label>
+            <p style={{fontWeight:700,margin:"22px 0 10px"}}>Interested in</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:9}}>{interestedOptions.map(([value,label])=>{const selected=profile.interested_in.includes(value);return <button key={value} type="button" aria-pressed={selected} onClick={()=>setField("interested_in",selected?profile.interested_in.filter(v=>v!==value):[...profile.interested_in,value])} style={{border:selected?"1px solid #d80621":"1px solid #ead5da",background:selected?"#d80621":"white",color:selected?"white":"#51434c",borderRadius:22,padding:"10px 14px",cursor:"pointer",fontWeight:700}}>{selected?"✓ ":""}{label}</button>})}</div>
+            <p style={{fontSize:13,color:"#776b72"}}>Leave all unselected to see everyone until you choose your preferences.</p>
+            <label style={{display:"flex",gap:9,alignItems:"center",marginTop:10,fontSize:14}}><input type="checkbox" checked={profile.show_interested_in} onChange={e=>setField("show_interested_in",e.target.checked)}/> Show who I am interested in on my profile</label>
+          </div>
           <label>City<input style={fieldStyle} maxLength={100} required placeholder="e.g. Windsor" value={profile.city} onChange={e => setField("city", e.target.value)}/></label>
           <label>Province or territory<select style={fieldStyle} required value={profile.province} onChange={e => setField("province", e.target.value)}>
             <option value="">Select province or territory</option>{provinces.map(([code, name]) => <option value={code} key={code}>{name}</option>)}
