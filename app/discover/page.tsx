@@ -59,8 +59,6 @@ export default function Discover(){
    <a href="/" style={{fontSize:28,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a><nav style={{display:"flex",gap:18}}><a href="/matches" style={{color:"white"}}>Matches</a><a href="/profile" style={{color:"white"}}>My profile</a></nav>
   </header>
   <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
-   <h1 style={{fontSize:36,marginBottom:6}}>Discover Canadians ♥</h1>
-   <p style={{color:"#75666d",lineHeight:1.5}}>Browse profiles and photos, then choose YEH or NEH. Adjust your age and location filters anytime.</p>
    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
     <section style={{background:"white",borderRadius:22,padding:24}}>
      <button type="button" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(v=>!v)} style={{border:0,background:"transparent",fontWeight:800,fontSize:17,color:"#d80621",cursor:"pointer",padding:0}}>☷ Filters {settingsOpen?"▲":"▼"}</button>
