@@ -62,7 +62,8 @@ export default function Discover(){
    <p style={{color:"#75666d",lineHeight:1.5}}>Browse profiles and photos, then choose YEH or NEH. Adjust your age and location filters anytime.</p>
    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
     <section style={{background:"white",borderRadius:22,padding:24}}>
-     <button type="button" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(v=>!v)} style={{border:0,background:"transparent",fontWeight:800,fontSize:17,color:"#d80621",cursor:"pointer",padding:0}}>☷ Filters {settingsOpen?"▲":"▼"}</button>\n     {settingsOpen&&<div style={{marginTop:20}}>
+     <button type="button" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(v=>!v)} style={{border:0,background:"transparent",fontWeight:800,fontSize:17,color:"#d80621",cursor:"pointer",padding:0}}>☷ Filters {settingsOpen?"▲":"▼"}</button>
+     {settingsOpen&&<div style={{marginTop:20}}>
      {loading?<p>Loading…</p>:!userId?<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to continue.</p>:<>
       {!hasProfile&&<p>First <a href="/profile" style={{color:"#c6001d"}}>complete your profile</a>.</p>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
