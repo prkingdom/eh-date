@@ -50,6 +50,13 @@ export default function ProfilePage() {
         province: data.province ?? "",
         bio: data.bio ?? ""
       });
+      const {data:privacy,error:privacyError}=await supabase.from("discovery_preferences")
+        .select("is_discoverable,share_photos").eq("user_id",authData.user.id).maybeSingle();
+      if(privacyError)setMessage("Could not load privacy settings: "+privacyError.message);
+      if(privacy){setIsPublic(privacy.is_discoverable);setSharePhotos(privacy.share_photos);}
+      const {data:photos,error:photoError}=await supabase.storage.from("profile-photos").list(authData.user.id,{limit:10});
+      if(photoError)setMessage("Could not check photos: "+photoError.message);
+      else setHasPhoto(Boolean(photos?.some(p=>p.name&&!p.name.startsWith("."))));
       setLoading(false);
     }
     void load();
@@ -60,7 +67,12 @@ export default function ProfilePage() {
     setPrivacySaving(true);setMessage("");
     const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,is_discoverable:nextPublic,share_photos:nextPhotos,updated_at:new Date().toISOString()},{onConflict:"user_id"});
     if(error)setMessage("Could not update privacy: "+error.message);
-    else {setIsPublic(nextPublic);setSharePhotos(nextPhotos);setMessage("Privacy settings saved.");}
+    else {
+      const {data:confirmed,error:readError}=await supabase.from("discovery_preferences")
+        .select("is_discoverable,share_photos").eq("user_id",userId).single();
+      if(readError||!confirmed)setMessage("Privacy saved but could not be verified. Please refresh.");
+      else {setIsPublic(confirmed.is_discoverable);setSharePhotos(confirmed.share_photos);setMessage("Privacy settings saved.");}
+    }
     setPrivacySaving(false);
   }
 
@@ -119,7 +131,8 @@ export default function ProfilePage() {
         </form>}
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
-        <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>\n        {!hasPhoto&&<p style={{fontSize:14,color:"#a60020",lineHeight:1.5}}>Upload at least one profile photo to appear in Discovery. Your privacy choices are still saved even without a photo. <a href="/profile/photos">Add photos</a>.</p>}
+        <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
+        {!hasPhoto&&<p style={{fontSize:14,color:"#a60020",lineHeight:1.5}}>Upload at least one profile photo to appear in Discovery. Your privacy choices are still saved even without a photo. <a href="/profile/photos">Add photos</a>.</p>}
         <p style={{fontSize:14,lineHeight:1.6,color:"#62535b"}}>Choose whether other eligible signed-in members can find your profile and view your photos.</p>
         <label style={{display:"flex",alignItems:"center",gap:12,marginTop:14}}>
           <input type="checkbox" checked={isPublic} disabled={privacySaving} onChange={e=>void savePrivacy(e.target.checked,sharePhotos)} style={{width:20,height:20,accentColor:"#d80621"}}/>
