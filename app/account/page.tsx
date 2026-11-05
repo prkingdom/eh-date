@@ -11,7 +11,8 @@ export default function AccountPage() {
   const [mode, setMode] = useState<"signup" | "login">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [ageConfirmed, setAgeConfirmed] = useState(false);\n  const [visibilityConsent, setVisibilityConsent] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [visibilityConsent, setVisibilityConsent] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -28,7 +29,8 @@ export default function AccountPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) { setMessage("Website authentication is not configured."); return; }
-    if (mode === "signup" && !ageConfirmed) { setMessage("You must confirm you are 18 or older."); return; }\n    if (mode === "signup" && !visibilityConsent) { setMessage("Please agree to the profile visibility and photo-sharing disclosure to create an account."); return; }
+    if (mode === "signup" && !ageConfirmed) { setMessage("You must confirm you are 18 or older."); return; }
+    if (mode === "signup" && !visibilityConsent) { setMessage("Please agree to the profile visibility and photo-sharing disclosure to create an account."); return; }
     setBusy(true);
     setMessage("");
     try {
@@ -76,7 +78,10 @@ export default function AccountPage() {
               <form onSubmit={submit} style={{display:"grid",gap:16,marginTop:28}}>
                 <label>Email address<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} style={inputStyle}/></label>
                 <label>Password<input required minLength={8} type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={e=>setPassword(e.target.value)} style={inputStyle}/></label>
-                {mode === "signup" && <>\n                  <label style={{display:"flex",gap:10,fontSize:14,lineHeight:1.5}}><input type="checkbox" required checked={ageConfirmed} onChange={e=>setAgeConfirmed(e.target.checked)}/> I confirm that I am at least 18 years old.</label>\n                  <label style={{display:"flex",gap:10,fontSize:14,lineHeight:1.5}}><input type="checkbox" required checked={visibilityConsent} onChange={e=>setVisibilityConsent(e.target.checked)}/> I agree that once I complete my profile, my name, age, location, bio and uploaded photos will be visible to eligible signed-in ehdate members by default. I can make my profile private or stop sharing photos at any time in My Profile settings. Temporary photo links may remain accessible for up to two minutes.</label>\n                </>}
+                {mode === "signup" && <>
+                  <label style={{display:"flex",gap:10,fontSize:14,lineHeight:1.5}}><input type="checkbox" required checked={ageConfirmed} onChange={e=>setAgeConfirmed(e.target.checked)}/> I confirm that I am at least 18 years old.</label>
+                  <label style={{display:"flex",gap:10,fontSize:14,lineHeight:1.5}}><input type="checkbox" required checked={visibilityConsent} onChange={e=>setVisibilityConsent(e.target.checked)}/> I agree that once I complete my profile, my name, age, location, bio and uploaded photos will be visible to eligible signed-in ehdate members by default. I can make my profile private or stop sharing photos at any time in My Profile settings. Temporary photo links may remain accessible for up to two minutes.</label>
+                </>}
                 <button type="submit" disabled={busy} style={buttonStyle}>{busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}</button>
               </form>
               <button type="button" onClick={()=>{setMode(mode === "signup" ? "login" : "signup");setMessage("");}} style={{border:0,background:"transparent",color:"#c6001d",cursor:"pointer",marginTop:22,fontWeight:700}}>{mode === "signup" ? "Already registered? Sign in" : "New here? Create an account"}</button>
