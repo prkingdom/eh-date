@@ -10,7 +10,7 @@ export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
- const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[expanded,setExpanded]=useState(false),[settingsOpen,setSettingsOpen]=useState(false);
+ const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
  async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_with_prompts",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
@@ -44,7 +44,7 @@ export default function Discover(){
   setBusy(false);
  }
  const member=members[0];
- useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);setExpanded(false);
+ useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);
   async function loadPhotos(){if(!supabase||!member||!visible)return;
    const {data,error}=await supabase.storage.from("profile-photos").list(member.user_id,{limit:6,sortBy:{column:"created_at",order:"asc"}});
    if(error||!data||!active)return;
@@ -78,6 +78,10 @@ export default function Discover(){
     </section>
     <section>
      {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
+      <div style={{display:"flex",gap:12,justifyContent:"center",padding:"18px 20px"}}>
+       <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
+       <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
+      </div>
       <div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88,position:"relative",overflow:"hidden"}}>
        {photoUrls.length?<><img src={photoUrls[photoIndex]} alt={"Profile photo "+(photoIndex+1)+" of "+photoUrls.length} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
        {photoUrls.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",gap:12,alignItems:"center",background:"#0009",padding:"7px 12px",borderRadius:25,fontSize:14}}>
@@ -92,14 +96,9 @@ export default function Discover(){
        <p style={{lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:expanded?"none":85,overflow:"hidden"}}>{member.bio||"Say hello!"}</p>
        {member.relationship_goal&&<p style={{fontWeight:800,color:"#a52640",margin:"14px 0"}}>♥ {member.relationship_goal}</p>}
        {!!member.interests?.length&&<div style={{display:"flex",flexWrap:"wrap",gap:8,margin:"14px 0"}}>{member.interests.map(interest=><span key={interest} style={{padding:"8px 12px",borderRadius:22,background:"#fff0f2",color:"#8e2338",fontWeight:700,fontSize:13}}>{interest}</span>)}</div>}
-       {!!member.personality_prompts?.length&&<div style={{display:"grid",gap:10,margin:"18px 0"}}>{member.personality_prompts.filter(p=>p.question&&p.answer).slice(0,expanded?3:1).map((p,i)=><div key={i} style={{background:"#fff5f5",borderRadius:14,padding:15}}><strong style={{color:"#a52640"}}>{p.question}</strong><p style={{lineHeight:1.6,margin:"8px 0 0",whiteSpace:"pre-wrap"}}>{p.answer}</p></div>)}</div>}
-       <button onClick={()=>setExpanded(v=>!v)} style={{border:0,background:"transparent",color:"#d80621",fontWeight:800,cursor:"pointer",padding:"8px 0"}}>{expanded?"Show less":"View full profile & photos"}</button>
-       {expanded&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:12}}>{photoUrls.map((src,i)=><button key={i} onClick={()=>setPhotoIndex(i)} style={{padding:0,border:i===photoIndex?"3px solid #d80621":"3px solid transparent",borderRadius:10,overflow:"hidden",background:"#eee",cursor:"pointer"}}><img src={src} alt={"View photo "+(i+1)} style={{width:"100%",height:105,objectFit:"cover",display:"block"}}/></button>)}</div>}
+       {!!member.personality_prompts?.length&&<div style={{display:"grid",gap:10,margin:"18px 0"}}>{member.personality_prompts.filter(p=>p.question&&p.answer).map((p,i)=><div key={i} style={{background:"#fff5f5",borderRadius:14,padding:15}}><strong style={{color:"#a52640"}}>{p.question}</strong><p style={{lineHeight:1.6,margin:"8px 0 0",whiteSpace:"pre-wrap"}}>{p.answer}</p></div>)}</div>}
       </div>
-      <div style={{display:"flex",gap:12,justifyContent:"center",padding:"0 20px 24px"}}>
-       <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
-       <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
-      </div>
+
      </div>:<div style={{background:"white",borderRadius:22,padding:30,textAlign:"center"}}>
       <div style={{fontSize:52,color:"#d80621"}}>♥</div><h2>No profiles to show yet</h2>
       <p style={{lineHeight:1.6,color:"#72676d"}}>When other Canadians opt in and match your preferences, their profiles will appear here.</p>
