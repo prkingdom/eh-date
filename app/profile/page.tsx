@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false);
+  const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false),[hasPhoto,setHasPhoto]=useState(false);
 
   useEffect(() => {
     async function load() {
@@ -119,7 +119,7 @@ export default function ProfilePage() {
         </form>}
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
-        <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
+        <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>\n        {!hasPhoto&&<p style={{fontSize:14,color:"#a60020",lineHeight:1.5}}>Upload at least one profile photo to appear in Discovery. Your privacy choices are still saved even without a photo. <a href="/profile/photos">Add photos</a>.</p>}
         <p style={{fontSize:14,lineHeight:1.6,color:"#62535b"}}>Choose whether other eligible signed-in members can find your profile and view your photos.</p>
         <label style={{display:"flex",alignItems:"center",gap:12,marginTop:14}}>
           <input type="checkbox" checked={isPublic} disabled={privacySaving} onChange={e=>void savePrivacy(e.target.checked,sharePhotos)} style={{width:20,height:20,accentColor:"#d80621"}}/>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
           <input type="checkbox" checked={sharePhotos} disabled={privacySaving} onChange={e=>void savePrivacy(isPublic,e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
           <span><strong>Share my profile photos</strong> with eligible members</span>
         </label>
-        <p style={{fontSize:13,color:"#786c71",lineHeight:1.5}}>Making your profile private removes it from new Discovery results. Existing matches may remain visible; temporary photo links can work for up to two minutes.</p>
+        <p style={{fontSize:13,color:"#786c71",lineHeight:1.5}}>Your selections are saved automatically when you change them. Making your profile private removes it from new Discovery results. Existing matches may remain visible; temporary photo links can work for up to two minutes.</p>
       </div>}
       <p style={{marginTop:24}}><a href="/profile/photos" style={{color:"#d80621",fontWeight:700}}>Manage your profile photos →</a></p></section>
     </div>
