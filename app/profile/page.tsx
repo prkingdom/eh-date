@@ -29,7 +29,7 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("");\n  const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false);
 
   useEffect(() => {
     async function load() {
@@ -53,6 +53,15 @@ export default function ProfilePage() {
     }
     void load();
   }, []);
+
+  async function savePrivacy(nextPublic:boolean,nextPhotos:boolean){
+    if(!supabase||!userId)return;
+    setPrivacySaving(true);setMessage("");
+    const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,is_discoverable:nextPublic,share_photos:nextPhotos,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+    if(error)setMessage("Could not update privacy: "+error.message);
+    else {setIsPublic(nextPublic);setSharePhotos(nextPhotos);setMessage("Privacy settings saved.");}
+    setPrivacySaving(false);
+  }
 
   function setField<K extends keyof Profile>(field: K, value: Profile[K]) {
     setProfile(previous => ({ ...previous, [field]: value }));
@@ -92,7 +101,7 @@ export default function ProfilePage() {
       <a href="/" style={{ color: "#d80621", textDecoration: "none", fontSize: 30, fontWeight: 800 }}>♥ ehdate.</a>
       <section style={{ marginTop: 35, background: "white", padding: "30px 25px", borderRadius: 24, boxShadow: "0 12px 35px #3a1d270c" }}>
         <h1 style={{ marginTop: 0, fontSize: 32 }}>Your dating profile</h1>
-        <p style={{ color: "#736871", lineHeight: 1.5 }}>Tell us a little about yourself. Your profile is private while we build discovery.</p>
+        <p style={{ color: "#736871", lineHeight: 1.5 }}>Tell us a little about yourself. Your profile visibility and photo sharing are controlled in Privacy settings below.</p>
         {loading ? <p>Loading your profile…</p> : !userId ? <p>Please <a href="/account">sign in</a> to create your profile.</p> :
         <form onSubmit={save} style={{ display: "grid", gap: 18, marginTop: 25 }}>
           <label>First name or display name<input style={fieldStyle} maxLength={60} required value={profile.display_name} onChange={e => setField("display_name", e.target.value)}/></label>
@@ -108,6 +117,19 @@ export default function ProfilePage() {
           <button disabled={saving} type="submit" style={{ border: 0, background: "#d80621", color: "white", padding: 16, borderRadius: 100, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save my profile"}</button>
         </form>}
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
+      {userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
+        <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
+        <p style={{fontSize:14,lineHeight:1.6,color:"#62535b"}}>Choose whether other eligible signed-in members can find your profile and view your photos.</p>
+        <label style={{display:"flex",alignItems:"center",gap:12,marginTop:14}}>
+          <input type="checkbox" checked={isPublic} disabled={privacySaving} onChange={e=>void savePrivacy(e.target.checked,sharePhotos)} style={{width:20,height:20,accentColor:"#d80621"}}/>
+          <span><strong>Public dating profile</strong> — appear in Discovery</span>
+        </label>
+        <label style={{display:"flex",alignItems:"center",gap:12,marginTop:18}}>
+          <input type="checkbox" checked={sharePhotos} disabled={privacySaving} onChange={e=>void savePrivacy(isPublic,e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
+          <span><strong>Share my profile photos</strong> with eligible members</span>
+        </label>
+        <p style={{fontSize:13,color:"#786c71",lineHeight:1.5}}>Making your profile private removes it from new Discovery results. Existing matches may remain visible; temporary photo links can work for up to two minutes.</p>
+      </div>}
       <p style={{marginTop:24}}><a href="/profile/photos" style={{color:"#d80621",fontWeight:700}}>Manage your profile photos →</a></p></section>
     </div>
   </main>;
