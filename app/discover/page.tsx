@@ -1,98 +1,89 @@
 "use client";
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-const supabase = url && key ? createClient(url, key) : null;
-const provinces = [["","Anywhere in Canada"],["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],["NL","Newfoundland and Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],["NU","Nunavut"],["ON","Ontario"],["PE","Prince Edward Island"],["QC","Quebec"],["SK","Saskatchewan"],["YT","Yukon"]];
-const examples = [
- {name:"Your next connection",age:"25",city:"Toronto, ON",bio:"Good conversations, weekend adventures, and discovering new places.",initials:"♥",gradient:"linear-gradient(145deg,#ff9b9f,#d80621)"},
- {name:"Someone nearby",age:"29",city:"Windsor, ON",bio:"Coffee, concerts, and enjoying the little things.",initials:"✦",gradient:"linear-gradient(145deg,#ffb7a2,#b92045)"},
- {name:"A new possibility",age:"27",city:"Vancouver, BC",bio:"Hikes, good food, and making memories.",initials:"✿",gradient:"linear-gradient(145deg,#f9a9b6,#df2645)"}
-];
-export default function DiscoverPage() {
- const [signedIn,setSignedIn]=useState<boolean|null>(null);
- const [minimumAge,setMinimumAge]=useState(18);
- const [maximumAge,setMaximumAge]=useState(99);
- const [province,setProvince]=useState("");
- const [index,setIndex]=useState(0);
- const [yes,setYes]=useState(0);
- const [no,setNo]=useState(0);
- const [saving,setSaving]=useState(false);
- const [message,setMessage]=useState("");
+import {useEffect,useState} from "react";
+import {createClient} from "@supabase/supabase-js";
+const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const supabase=url&&key?createClient(url,key):null;
+type Member={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null};
+const provinces=[["","Anywhere in Canada"],["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],["NL","Newfoundland and Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],["NU","Nunavut"],["ON","Ontario"],["PE","Prince Edward Island"],["QC","Quebec"],["SK","Saskatchewan"],["YT","Yukon"]];
+const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadius:12,background:"white",fontSize:15};
+export default function Discover(){
+ const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
+ const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
+ const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
+ async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
-  if(!supabase){setSignedIn(false);return;}
+  if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
   const {data:{user}}=await supabase.auth.getUser();
-  setSignedIn(Boolean(user));
-  if(!user)return;
-  const {data}=await supabase.from("discovery_preferences").select("minimum_age,maximum_age,preferred_province").eq("user_id",user.id).maybeSingle();
-  if(data){setMinimumAge(data.minimum_age);setMaximumAge(data.maximum_age);setProvince(data.preferred_province??"");}
+  if(!user){setLoading(false);return;}
+  setUserId(user.id);
+  const [pref,profile]=await Promise.all([
+   supabase.from("discovery_preferences").select("minimum_age,maximum_age,preferred_province,is_discoverable").eq("user_id",user.id).maybeSingle(),
+   supabase.from("profiles").select("user_id").eq("user_id",user.id).maybeSingle()
+  ]);
+  setHasProfile(Boolean(profile.data));
+  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setProvince(pref.data.preferred_province??"");setVisible(pref.data.is_discoverable);}
+  if(pref.data?.is_discoverable)await refresh();
+  setLoading(false);
  }void load();},[]);
- async function savePreferences(){
-  if(!supabase)return;
-  if(minimumAge>maximumAge){setMessage("Minimum age cannot be higher than maximum age.");return;}
-  setSaving(true);setMessage("");
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){setMessage("Please sign in first.");setSaving(false);return;}
-  const {error}=await supabase.from("discovery_preferences").upsert({
-   user_id:user.id,minimum_age:minimumAge,maximum_age:maximumAge,preferred_province:province||null,
-   is_discoverable:false,updated_at:new Date().toISOString()
-  },{onConflict:"user_id"});
-  setMessage(error?"Could not save preferences: "+error.message:"Your preferences have been saved. Discovery remains off until safety features are ready.");
-  setSaving(false);
+ async function save(){
+  if(!supabase||!userId)return;
+  if(!Number.isInteger(min)||!Number.isInteger(max)||min<18||max>100||min>max){setMessage("Choose a valid age range between 18 and 100.");return;}
+  if(visible&&!hasProfile){setMessage("Create your dating profile before becoming visible.");return;}
+  setBusy(true);setMessage("");
+  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:province||null,is_discoverable:visible,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+  if(error)setMessage(error.message);
+  else{setMessage(visible?"Preferences saved. Your profile is visible to eligible signed-in members.":"Preferences saved. Your profile is hidden from discovery.");if(visible)await refresh();else setMembers([]);}
+  setBusy(false);
  }
- function choose(decision:"YEH"|"NEH"){
-  if(decision==="YEH")setYes(n=>n+1);else setNo(n=>n+1);
-  setIndex(i=>i+1);
+ async function swipe(target:string,decision:"YEH"|"NEH"){
+  if(!supabase||!userId)return;setBusy(true);setMessage("");
+  const {error}=await supabase.from("swipes").insert({swiper_id:userId,target_id:target,decision});
+  if(error)setMessage("Could not record your choice: "+error.message);
+  else{setMembers(m=>m.filter(p=>p.user_id!==target));setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");}
+  setBusy(false);
  }
- const current=examples[index%examples.length];
- const finished=index>=3;
- const selectStyle={width:"100%",padding:12,border:"1px solid #e9cfd3",borderRadius:12,background:"white",fontSize:15,color:"#262026"} as const;
+ const member=members[0];
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
-  <header style={{background:"#d80621",color:"white",padding:"20px max(20px,6vw)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-   <a href="/" style={{fontSize:28,fontWeight:800,textDecoration:"none",color:"white"}}>♥ ehdate.</a>
-   <a href="/profile" style={{color:"white",fontWeight:700,textDecoration:"none"}}>My profile</a>
+  <header style={{background:"#d80621",padding:"20px max(20px,6vw)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+   <a href="/" style={{fontSize:28,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a><nav style={{display:"flex",gap:18}}><a href="/matches" style={{color:"white"}}>Matches</a><a href="/profile" style={{color:"white"}}>My profile</a></nav>
   </header>
-  <div style={{maxWidth:1000,margin:"0 auto",padding:"35px 20px"}}>
-   <h1 style={{fontSize:"clamp(30px,5vw,44px)",margin:"0 0 8px"}}>Discover your next connection</h1>
-   <p style={{color:"#75676d",lineHeight:1.5,marginBottom:24}}>Canadians Meet Here. 🇨🇦</p>
-   <div style={{background:"#fff0d8",border:"1px solid #f4cf8d",padding:16,borderRadius:14,lineHeight:1.5,marginBottom:24}}>
-    <strong>Preview mode:</strong> These are fictional sample cards, not real members. YEH and NEH are only demonstrations and are not saved. Real discovery will launch after privacy and safety protections are completed.
-   </div>
-   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,320px),1fr))",gap:28,alignItems:"start"}}>
-    <section style={{background:"white",borderRadius:22,padding:20,boxShadow:"0 8px 30px #5c14200d"}}>
-     <h2 style={{marginTop:0}}>Your preferences</h2>
-     {signedIn===false&&<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to save your preferences.</p>}
-     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-      <label>Minimum age<input aria-label="Minimum age" type="number" min={18} max={100} value={minimumAge} onChange={e=>setMinimumAge(Number(e.target.value))} style={selectStyle}/></label>
-      <label>Maximum age<input aria-label="Maximum age" type="number" min={18} max={100} value={maximumAge} onChange={e=>setMaximumAge(Number(e.target.value))} style={selectStyle}/></label>
-     </div>
-     <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...selectStyle,marginTop:7}}>
-      {provinces.map(([code,label])=><option key={code} value={code}>{label}</option>)}
-     </select></label>
-     <button disabled={saving||signedIn!==true} onClick={()=>void savePreferences()} style={{background:"#d80621",color:"white",border:0,borderRadius:40,padding:"14px 22px",fontWeight:800,marginTop:20,cursor:"pointer",opacity:signedIn!==true?.5:1}}>{saving?"Saving…":"Save preferences"}</button>
-     {message&&<p role="status" style={{lineHeight:1.5,color:"#a0001c"}}>{message}</p>}
-     <p style={{fontSize:13,color:"#806c72",lineHeight:1.5}}>Your profile is not visible to other members yet.</p>
+  <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
+   <h1 style={{fontSize:36,marginBottom:6}}>Discover Canadians ♥</h1>
+   <p style={{color:"#75666d",lineHeight:1.5}}>Only members who choose to appear in discovery can be shown here.</p>
+   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,330px),1fr))",gap:24,marginTop:28,alignItems:"start"}}>
+    <section style={{background:"white",borderRadius:22,padding:24}}>
+     <h2 style={{marginTop:0}}>Your discovery settings</h2>
+     {loading?<p>Loading…</p>:!userId?<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to continue.</p>:<>
+      {!hasProfile&&<p>First <a href="/profile" style={{color:"#c6001d"}}>complete your profile</a>.</p>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+       <label>Minimum age<input type="number" min={18} max={100} value={min} onChange={e=>setMin(Number(e.target.value))} style={inputStyle}/></label>
+       <label>Maximum age<input type="number" min={18} max={100} value={max} onChange={e=>setMax(Number(e.target.value))} style={inputStyle}/></label>
+      </div>
+      <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...inputStyle,marginTop:8}}>{provinces.map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
+      <label style={{display:"flex",gap:12,alignItems:"flex-start",marginTop:24,lineHeight:1.5}}>
+       <input type="checkbox" checked={visible} onChange={e=>setVisible(e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
+       <span><strong>Show my profile in discovery</strong><br/>Other signed-in members who meet your preferences may see your name, age, city, province and bio. Photos are not shared yet. You can turn this off anytime.</span>
+      </label>
+      <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
+     </>}
+     {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
-    <section style={{maxWidth:440,width:"100%",margin:"0 auto"}}>
-     {!finished?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 12px 40px #701b271b"}}>
-      <div style={{height:340,background:current.gradient,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:"white"}}>
-       <div style={{fontSize:110,fontWeight:700}}>{current.initials}</div><span style={{background:"#ffffff33",padding:"8px 14px",borderRadius:30,fontSize:13}}>SAMPLE PROFILE</span>
+    <section>
+     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Opt in and save your settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
+      <div style={{height:270,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88}}>♥</div>
+      <div style={{padding:24}}>
+       <h2 style={{margin:"0 0 10px"}}>{member.display_name}, {member.age}</h2>
+       <p style={{color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p>
+       <p style={{lineHeight:1.6}}>{member.bio||"Say hello!"}</p>
       </div>
-      <div style={{padding:22}}>
-       <h2 style={{fontSize:27,margin:"0 0 6px"}}>{current.name}, {current.age}</h2>
-       <p style={{color:"#a52a3c",fontWeight:700,margin:"0 0 14px"}}>📍 {current.city}</p>
-       <p style={{color:"#675e63",lineHeight:1.5}}>{current.bio}</p>
+      <div style={{display:"flex",gap:12,justifyContent:"center",padding:"0 20px 24px"}}>
+       <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
+       <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
       </div>
-     </div>:<div style={{background:"white",padding:32,borderRadius:24,textAlign:"center"}}>
-      <div style={{fontSize:58}}>♥</div><h2>Preview complete!</h2>
-      <p>You've tried {yes} YEH{yes===1?"":"s"} and {no} NEH{no===1?"":"s"}.</p>
-      <button onClick={()=>{setIndex(0);setYes(0);setNo(0);}} style={{border:0,borderRadius:30,padding:"14px 20px",background:"#d80621",color:"white",fontWeight:700,cursor:"pointer"}}>Try again</button>
-     </div>}
-     {!finished&&<div style={{display:"flex",gap:18,justifyContent:"center",marginTop:24}}>
-      <button onClick={()=>choose("NEH")} style={{background:"white",border:"2px solid #e4c7cb",color:"#c6001d",borderRadius:60,padding:"16px 30px",fontSize:19,fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
-      <button onClick={()=>choose("YEH")} style={{background:"#d80621",border:"2px solid #d80621",color:"white",borderRadius:60,padding:"16px 30px",fontSize:19,fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
+     </div>:<div style={{background:"white",borderRadius:22,padding:30,textAlign:"center"}}>
+      <div style={{fontSize:52,color:"#d80621"}}>♥</div><h2>No profiles to show yet</h2>
+      <p style={{lineHeight:1.6,color:"#72676d"}}>When other Canadians opt in and match your preferences, their profiles will appear here.</p>
+      <button onClick={()=>void refresh()} style={{border:0,background:"#d80621",color:"white",padding:"13px 22px",borderRadius:30,cursor:"pointer"}}>Refresh profiles</button>
      </div>}
     </section>
    </div>
