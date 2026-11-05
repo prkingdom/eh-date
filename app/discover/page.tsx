@@ -9,7 +9,8 @@ const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadiu
 export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false),[sharePhotos,setSharePhotos]=useState(false);
- const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);\n const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0);
+ const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
+ const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0);
  async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
@@ -42,7 +43,16 @@ export default function Discover(){
   else{setMembers(m=>m.filter(p=>p.user_id!==target));setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");}
   setBusy(false);
  }
- const member=members[0];\n useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);\n  async function loadPhotos(){if(!supabase||!member||!visible)return;\n   const {data,error}=await supabase.storage.from("profile-photos").list(member.user_id,{limit:6,sortBy:{column:"created_at",order:"asc"}});\n   if(error||!data||!active)return;\n   const paths=data.filter(p=>p.name&&!p.name.startsWith(".")).slice(0,6).map(p=>member.user_id+"/"+p.name);\n   const {data:urls}=await supabase.storage.from("profile-photos").createSignedUrls(paths,120);\n   if(active)setPhotoUrls((urls??[]).filter(p=>p.signedUrl).map(p=>p.signedUrl));\n  }void loadPhotos();return()=>{active=false;};\n },[member?.user_id,visible]);
+ const member=members[0];
+ useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);
+  async function loadPhotos(){if(!supabase||!member||!visible)return;
+   const {data,error}=await supabase.storage.from("profile-photos").list(member.user_id,{limit:6,sortBy:{column:"created_at",order:"asc"}});
+   if(error||!data||!active)return;
+   const paths=data.filter(p=>p.name&&!p.name.startsWith(".")).slice(0,6).map(p=>member.user_id+"/"+p.name);
+   const {data:urls}=await supabase.storage.from("profile-photos").createSignedUrls(paths,120);
+   if(active)setPhotoUrls((urls??[]).filter(p=>p.signedUrl).map(p=>p.signedUrl));
+  }void loadPhotos();return()=>{active=false;};
+ },[member?.user_id,visible]);
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
   <header style={{background:"#d80621",padding:"20px max(20px,6vw)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
    <a href="/" style={{fontSize:28,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a><nav style={{display:"flex",gap:18}}><a href="/matches" style={{color:"white"}}>Matches</a><a href="/profile" style={{color:"white"}}>My profile</a></nav>
@@ -64,13 +74,24 @@ export default function Discover(){
        <input type="checkbox" checked={visible} onChange={e=>setVisible(e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
        <span><strong>Show my profile in discovery</strong><br/>Other signed-in members who meet your preferences may see your name, age, city, province and bio. Your name, age, city, province and bio can appear to eligible members. Photos are shared only if you enable the separate option below.</span>
       </label>
-      <label style={{display:"flex",gap:12,alignItems:"flex-start",marginTop:18,lineHeight:1.5}}>\n       <input type="checkbox" checked={sharePhotos} onChange={e=>setSharePhotos(e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>\n       <span><strong>Share my profile photos</strong><br/>Allow eligible signed-in members to view your photos when discovery is on. Turning this off stops new access, but temporary photo links can remain valid for up to two minutes.</span>\n      </label>\n      <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
+      <label style={{display:"flex",gap:12,alignItems:"flex-start",marginTop:18,lineHeight:1.5}}>
+       <input type="checkbox" checked={sharePhotos} onChange={e=>setSharePhotos(e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
+       <span><strong>Share my profile photos</strong><br/>Allow eligible signed-in members to view your photos when discovery is on. Turning this off stops new access, but temporary photo links can remain valid for up to two minutes.</span>
+      </label>
+      <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
     <section>
      {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Opt in and save your settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
-      <div style={{height:320,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88,position:"relative",overflow:"hidden"}}>\n       {photoUrls.length?<><img src={photoUrls[photoIndex]} alt={"Profile photo "+(photoIndex+1)+" of "+photoUrls.length} style={{width:"100%",height:"100%",objectFit:"cover"}}/>\n       {photoUrls.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",gap:12,alignItems:"center",background:"#0009",padding:"7px 12px",borderRadius:25,fontSize:14}}>\n        <button aria-label="Previous photo" onClick={()=>setPhotoIndex(i=>(i+photoUrls.length-1)%photoUrls.length)} style={{border:0,background:"transparent",color:"white",fontSize:22,cursor:"pointer"}}>‹</button>\n        {photoIndex+1} / {photoUrls.length}\n        <button aria-label="Next photo" onClick={()=>setPhotoIndex(i=>(i+1)%photoUrls.length)} style={{border:0,background:"transparent",color:"white",fontSize:22,cursor:"pointer"}}>›</button>\n       </div>}</>:<span aria-label="No profile photo">♥</span>}\n      </div>
+      <div style={{height:320,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88,position:"relative",overflow:"hidden"}}>
+       {photoUrls.length?<><img src={photoUrls[photoIndex]} alt={"Profile photo "+(photoIndex+1)+" of "+photoUrls.length} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+       {photoUrls.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",gap:12,alignItems:"center",background:"#0009",padding:"7px 12px",borderRadius:25,fontSize:14}}>
+        <button aria-label="Previous photo" onClick={()=>setPhotoIndex(i=>(i+photoUrls.length-1)%photoUrls.length)} style={{border:0,background:"transparent",color:"white",fontSize:22,cursor:"pointer"}}>‹</button>
+        {photoIndex+1} / {photoUrls.length}
+        <button aria-label="Next photo" onClick={()=>setPhotoIndex(i=>(i+1)%photoUrls.length)} style={{border:0,background:"transparent",color:"white",fontSize:22,cursor:"pointer"}}>›</button>
+       </div>}</>:<span aria-label="No profile photo">♥</span>}
+      </div>
       <div style={{padding:24}}>
        <h2 style={{margin:"0 0 10px"}}>{member.display_name}, {member.age}</h2>
        <p style={{color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p>
