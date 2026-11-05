@@ -14,9 +14,13 @@ type Profile = {
   city: string;
   province: string;
   bio: string;
+  relationship_goal: string;
+  interests: string[];
 };
 
-const emptyProfile: Profile = { display_name: "", date_of_birth: "", gender: "", city: "", province: "", bio: "" };
+const emptyProfile: Profile = { display_name: "", date_of_birth: "", gender: "", city: "", province: "", bio: "", relationship_goal: "", interests: [] };
+const relationshipGoals=["Long-term relationship","Long-term, open to short","Short-term, open to long","Casual dating","New friends","Figuring it out"];
+const interestOptions=["Fitness","Travel","Cooking","Music","Movies","Hiking","Camping","Dogs","Cats","Sports","Gaming","Reading","Coffee","Foodie","Art","Photography","Dancing","Beach days","Road trips","Volunteering","Gardening","Yoga","Fashion","Live music"];
 const provinces = [
   ["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],
   ["NL","Newfoundland and Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],
@@ -41,7 +45,7 @@ export default function ProfilePage() {
       if (authError || !authData.user) { setLoading(false); return; }
       setUserId(authData.user.id);
       const { data, error } = await supabase.from("profiles")
-        .select("display_name,date_of_birth,gender,city,province,bio")
+        .select("display_name,date_of_birth,gender,city,province,bio,relationship_goal,interests")
         .eq("user_id", authData.user.id).maybeSingle();
       if (error) setMessage(error.message);
       else if (data) setProfile({
@@ -50,7 +54,9 @@ export default function ProfilePage() {
         gender: data.gender ?? "",
         city: data.city ?? "",
         province: data.province ?? "",
-        bio: data.bio ?? ""
+        bio: data.bio ?? "",
+        relationship_goal: data.relationship_goal ?? "",
+        interests: data.interests ?? []
       });
       const {data:privacy,error:privacyError}=await supabase.from("discovery_preferences")
         .select("is_discoverable,share_photos").eq("user_id",authData.user.id).maybeSingle();
@@ -104,6 +110,8 @@ export default function ProfilePage() {
       city: profile.city.trim(),
       province: profile.province,
       bio: profile.bio.trim() || null,
+      relationship_goal: profile.relationship_goal || null,
+      interests: profile.interests,
       updated_at: new Date().toISOString()
     }, { onConflict: "user_id" });
     setMessage(error ? "Could not save: " + error.message : "Your profile has been saved!");
@@ -130,8 +138,23 @@ export default function ProfilePage() {
             <option value="">Select province or territory</option>{provinces.map(([code, name]) => <option value={code} key={code}>{name}</option>)}
           </select></label>
           <label>About me (optional)<textarea style={{ ...fieldStyle, minHeight: 120, resize: "vertical" }} maxLength={1000} placeholder="A little about you, your interests, and what makes you smile…" value={profile.bio} onChange={e => setField("bio", e.target.value)}/></label>
+          <div style={{borderTop:"1px solid #f0e1e4",paddingTop:20}}>
+            <h2 style={{fontSize:21,margin:"0 0 8px"}}>What are you looking for? ♥</h2>
+            <p style={{color:"#776b72",fontSize:14}}>Choose your relationship goal (optional).</p>
+            <select style={fieldStyle} value={profile.relationship_goal} onChange={e=>setField("relationship_goal",e.target.value)}>
+              <option value="">Select a relationship goal</option>
+              {relationshipGoals.map(goal=><option key={goal} value={goal}>{goal}</option>)}
+            </select>
+          </div>
+          <div style={{borderTop:"1px solid #f0e1e4",paddingTop:20}}>
+            <h2 style={{fontSize:21,margin:"0 0 8px"}}>Your interests ✨</h2>
+            <p style={{color:"#776b72",fontSize:14}}>Pick up to 8 things you love. {profile.interests.length}/8 selected.</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:9}}>
+              {interestOptions.map(interest=>{const selected=profile.interests.includes(interest);return <button key={interest} type="button" aria-pressed={selected} onClick={()=>setField("interests",selected?profile.interests.filter(v=>v!==interest):profile.interests.length<8?[...profile.interests,interest]:profile.interests)} style={{border:selected?"1px solid #d80621":"1px solid #ead5da",background:selected?"#d80621":"white",color:selected?"white":"#51434c",borderRadius:22,padding:"9px 13px",cursor:"pointer",fontWeight:700,fontSize:13}}>{selected?"✓ ":""}{interest}</button>})}
+            </div>
+          </div>
           <button disabled={saving} type="submit" style={{ border: 0, background: "#d80621", color: "white", padding: 16, borderRadius: 100, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save my profile"}</button>
-        </form></div> : tab==="preview" ? <div style={{borderRadius:18,overflow:"hidden",background:"#fff5f5"}}><div style={{height:"min(60vh,520px)",minHeight:300,background:"linear-gradient(135deg,#ffb9c2,#d80621)",display:"grid",placeItems:"center",position:"relative",overflow:"hidden",isolation:"isolate"}}>{photos.length?<img src={photos[photoIndex]} alt="Your profile photo" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>:<span style={{fontSize:80,color:"white"}}>♥</span>}{photos.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",alignItems:"center",gap:14,background:"#0008",color:"white",borderRadius:25,padding:7}}><button onClick={()=>setPhotoIndex(i=>(i+photos.length-1)%photos.length)} aria-label="Previous photo">‹</button>{photoIndex+1} / {photos.length}<button onClick={()=>setPhotoIndex(i=>(i+1)%photos.length)} aria-label="Next photo">›</button></div>}</div><div style={{padding:22}}><h2 style={{fontSize:28}}>{profile.display_name||"Your name"}</h2><p style={{color:"#d80621"}}>📍 {[profile.city,profile.province].filter(Boolean).join(", ")}</p><p style={{whiteSpace:"pre-wrap",lineHeight:1.7}}>{profile.bio||"Your bio will appear here."}</p><button onClick={()=>setTab("edit")} style={{border:0,borderRadius:25,padding:14,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>Edit profile</button></div></div> : null}
+        </form></div> : tab==="preview" ? <div style={{borderRadius:18,overflow:"hidden",background:"#fff5f5"}}><div style={{height:"min(60vh,520px)",minHeight:300,background:"linear-gradient(135deg,#ffb9c2,#d80621)",display:"grid",placeItems:"center",position:"relative",overflow:"hidden",isolation:"isolate"}}>{photos.length?<img src={photos[photoIndex]} alt="Your profile photo" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>:<span style={{fontSize:80,color:"white"}}>♥</span>}{photos.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",alignItems:"center",gap:14,background:"#0008",color:"white",borderRadius:25,padding:7}}><button onClick={()=>setPhotoIndex(i=>(i+photos.length-1)%photos.length)} aria-label="Previous photo">‹</button>{photoIndex+1} / {photos.length}<button onClick={()=>setPhotoIndex(i=>(i+1)%photos.length)} aria-label="Next photo">›</button></div>}</div><div style={{padding:22}}><h2 style={{fontSize:28}}>{profile.display_name||"Your name"}</h2><p style={{color:"#d80621"}}>📍 {[profile.city,profile.province].filter(Boolean).join(", ")}</p><p style={{whiteSpace:"pre-wrap",lineHeight:1.7}}>{profile.bio||"Your bio will appear here."}</p>{profile.relationship_goal&&<p style={{fontWeight:800,color:"#a52640"}}>♥ {profile.relationship_goal}</p>}{profile.interests.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8,margin:"18px 0"}}>{profile.interests.map(interest=><span key={interest} style={{padding:"8px 12px",background:"white",borderRadius:22,fontSize:13,fontWeight:700}}>{interest}</span>)}</div>}<button onClick={()=>setTab("edit")} style={{border:0,borderRadius:25,padding:14,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>Edit profile</button></div></div> : null}
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {tab==="settings"&&userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
         <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
