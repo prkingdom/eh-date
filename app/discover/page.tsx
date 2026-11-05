@@ -3,7 +3,7 @@ import {useEffect,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
-type Member={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;relationship_goal:string|null;interests:string[]|null;personality_prompts:{question:string;answer:string}[]|null};
+type Member={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;relationship_goal:string|null;interests:string[]|null;personality_prompts:{question:string;answer:string}[]|null;sexual_orientation:string|null;interested_in:string[]|null};
 const provinces=[["","Anywhere in Canada"],["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],["NL","Newfoundland and Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],["NU","Nunavut"],["ON","Ontario"],["PE","Prince Edward Island"],["QC","Quebec"],["SK","Saskatchewan"],["YT","Yukon"]];
 const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadius:12,background:"white",fontSize:15};
 // Deployment sync: Discovery now shows complete profiles and top-positioned swipe controls.
@@ -12,7 +12,7 @@ export default function Discover(){
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
- async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_with_prompts",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
+ async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_with_preferences",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
   const {data:{user}}=await supabase.auth.getUser();
@@ -94,6 +94,8 @@ export default function Discover(){
        <p style={{color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p>
        <p style={{lineHeight:1.6,whiteSpace:"pre-wrap",}}>{member.bio||"Say hello!"}</p>
        {member.relationship_goal&&<p style={{fontWeight:800,color:"#a52640",margin:"14px 0"}}>♥ {member.relationship_goal}</p>}
+       {member.sexual_orientation&&<p style={{color:"#a52640"}}>Orientation: {member.sexual_orientation}</p>}
+       {!!member.interested_in?.length&&<p style={{color:"#a52640"}}>Interested in: {member.interested_in.map(v=>v==="Man"?"Men":v==="Woman"?"Women":"Non-binary people").join(", ")}</p>}
        {!!member.interests?.length&&<div style={{display:"flex",flexWrap:"wrap",gap:8,margin:"14px 0"}}>{member.interests.map(interest=><span key={interest} style={{padding:"8px 12px",borderRadius:22,background:"#fff0f2",color:"#8e2338",fontWeight:700,fontSize:13}}>{interest}</span>)}</div>}
        {!!member.personality_prompts?.length&&<div style={{display:"grid",gap:10,margin:"18px 0"}}>{member.personality_prompts.filter(p=>p.question&&p.answer).map((p,i)=><div key={i} style={{background:"#fff5f5",borderRadius:14,padding:15}}><strong style={{color:"#a52640"}}>{p.question}</strong><p style={{lineHeight:1.6,margin:"8px 0 0",whiteSpace:"pre-wrap"}}>{p.answer}</p></div>)}</div>}
       </div>
