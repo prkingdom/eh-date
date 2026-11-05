@@ -8,7 +8,7 @@ const provinces=[["","Anywhere in Canada"],["AB","Alberta"],["BC","British Colum
 const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadius:12,background:"white",fontSize:15};
 export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
- const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false),[sharePhotos,setSharePhotos]=useState(false);
+ const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[expanded,setExpanded]=useState(false),[settingsOpen,setSettingsOpen]=useState(false);
  async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
@@ -22,18 +22,18 @@ export default function Discover(){
    supabase.from("profiles").select("user_id").eq("user_id",user.id).maybeSingle()
   ]);
   setHasProfile(Boolean(profile.data));
-  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setProvince(pref.data.preferred_province??"");setVisible(pref.data.is_discoverable);setSharePhotos(pref.data.share_photos??false);}
+  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setProvince(pref.data.preferred_province??"");setVisible(pref.data.is_discoverable);}
   if(pref.data?.is_discoverable)await refresh();
   setLoading(false);
  }void load();},[]);
  async function save(){
   if(!supabase||!userId)return;
   if(!Number.isInteger(min)||!Number.isInteger(max)||min<18||max>100||min>max){setMessage("Choose a valid age range between 18 and 100.");return;}
-  if(visible&&!hasProfile){setMessage("Create your dating profile before becoming visible.");return;}
+
   setBusy(true);setMessage("");
-  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:province||null,is_discoverable:visible,share_photos:visible&&sharePhotos,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:province||null,updated_at:new Date().toISOString()},{onConflict:"user_id"});
   if(error)setMessage(error.message);
-  else{setMessage(visible?"Preferences saved. Your profile is visible to eligible signed-in members.":"Preferences saved. Your profile is hidden from discovery.");if(visible)await refresh();else setMembers([]);}
+  else{setMessage("Filters saved.");await refresh();setSettingsOpen(false);}
   setBusy(false);
  }
  async function swipe(target:string,decision:"YEH"|"NEH"){
@@ -59,10 +59,10 @@ export default function Discover(){
   </header>
   <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
    <h1 style={{fontSize:36,marginBottom:6}}>Discover Canadians ♥</h1>
-   <p style={{color:"#75666d",lineHeight:1.5}}>Only members who choose to appear in discovery can be shown here.</p>
+   <p style={{color:"#75666d",lineHeight:1.5}}>Browse profiles and photos, then choose YEH or NEH. Adjust your age and location filters anytime.</p>
    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
     <section style={{background:"white",borderRadius:22,padding:24}}>
-     <h2 style={{marginTop:0}}>Your discovery settings</h2>
+     <button type="button" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(v=>!v)} style={{border:0,background:"transparent",fontWeight:800,fontSize:17,color:"#d80621",cursor:"pointer",padding:0}}>☷ Filters {settingsOpen?"▲":"▼"}</button>\n     {settingsOpen&&<div style={{marginTop:20}}>
      {loading?<p>Loading…</p>:!userId?<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to continue.</p>:<>
       {!hasProfile&&<p>First <a href="/profile" style={{color:"#c6001d"}}>complete your profile</a>.</p>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -70,20 +70,12 @@ export default function Discover(){
        <label>Maximum age<input type="number" min={18} max={100} value={max} onChange={e=>setMax(Number(e.target.value))} style={inputStyle}/></label>
       </div>
       <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...inputStyle,marginTop:8}}>{provinces.map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
-      <label style={{display:"flex",gap:12,alignItems:"flex-start",marginTop:24,lineHeight:1.5}}>
-       <input type="checkbox" checked={visible} onChange={e=>setVisible(e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
-       <span><strong>Show my profile in discovery</strong><br/>Other signed-in members who meet your preferences may see your name, age, city, province and bio. Your name, age, city, province and bio can appear to eligible members. Photos are shared only if you enable the separate option below.</span>
-      </label>
-      <label style={{display:"flex",gap:12,alignItems:"flex-start",marginTop:18,lineHeight:1.5}}>
-       <input type="checkbox" checked={sharePhotos} onChange={e=>setSharePhotos(e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/>
-       <span><strong>Share my profile photos</strong><br/>Allow eligible signed-in members to view your photos when discovery is on. Turning this off stops new access, but temporary photo links can remain valid for up to two minutes.</span>
-      </label>
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
     <section>
-     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Opt in and save your settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
+     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
       <div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:88,position:"relative",overflow:"hidden"}}>
        {photoUrls.length?<><img src={photoUrls[photoIndex]} alt={"Profile photo "+(photoIndex+1)+" of "+photoUrls.length} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
        {photoUrls.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",gap:12,alignItems:"center",background:"#0009",padding:"7px 12px",borderRadius:25,fontSize:14}}>
