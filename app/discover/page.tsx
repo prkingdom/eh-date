@@ -73,6 +73,7 @@ export default function Discover(){
       <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...inputStyle,marginTop:8}}>{provinces.map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
+     </div>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
     <section>
