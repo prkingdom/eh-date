@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false),[hasPhoto,setHasPhoto]=useState(false);
+  const [deleteConfirm,setDeleteConfirm]=useState(""),[deleting,setDeleting]=useState(false),[verificationStatus,setVerificationStatus]=useState("");
   const [emailMatches,setEmailMatches]=useState(false),[emailMessages,setEmailMessages]=useState(false),[emailSaving,setEmailSaving]=useState(false);
   const [excludedNames,setExcludedNames]=useState<string[]>([]),[newExcludedName,setNewExcludedName]=useState(""),[nameSaving,setNameSaving]=useState(false);
 
@@ -78,6 +79,8 @@ export default function ProfilePage() {
         .select("is_discoverable,share_photos,excluded_names").eq("user_id",authData.user.id).maybeSingle();
       if(privacyError)setMessage("Could not load privacy settings: "+privacyError.message);
       if(privacy){setIsPublic(privacy.is_discoverable);setSharePhotos(privacy.share_photos);setExcludedNames(privacy.excluded_names??[]);}
+      const {data:verification}=await supabase.from("profile_verification_requests").select("status").eq("user_id",authData.user.id).maybeSingle();
+      if(verification)setVerificationStatus(verification.status);
       const {data:emailPrefs}=await supabase.from("email_notification_preferences").select("new_matches,new_messages").eq("user_id",authData.user.id).maybeSingle();
       if(emailPrefs){setEmailMatches(emailPrefs.new_matches);setEmailMessages(emailPrefs.new_messages);}
       const {data:photos,error:photoError}=await supabase.storage.from("profile-photos").list(authData.user.id,{limit:10});
@@ -102,6 +105,20 @@ export default function ProfilePage() {
     setPrivacySaving(false);
   }
 
+  async function requestVerification(){
+    if(!supabase||!userId||verificationStatus)return;
+    const {error}=await supabase.from("profile_verification_requests").insert({user_id:userId});
+    if(error)setMessage("Could not request verification: "+error.message);
+    else{setVerificationStatus("pending");setMessage("Verification request submitted for manual review. This does not verify your identity yet.");}
+  }
+  async function deleteAccount(){
+    if(!supabase||deleteConfirm!=="DELETE MY ACCOUNT"||deleting)return;
+    setDeleting(true);setMessage("");
+    const {data,error}=await supabase.functions.invoke("delete-my-account",{body:{confirm:deleteConfirm}});
+    if(error||!data?.deleted){setMessage("Account deletion failed. Please contact support before trying again.");setDeleting(false);return;}
+    await supabase.auth.signOut();
+    window.location.href="/";
+  }
   async function saveEmailPreferences(matches:boolean,messages:boolean){
     if(!supabase||!userId||emailSaving)return;
     setEmailSaving(true);setMessage("");
@@ -236,6 +253,12 @@ export default function ProfilePage() {
       {tab==="settings"&&userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
         <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
         <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
+          <h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Profile verification</h3>
+          <p style={{fontSize:14,color:"#675c63"}}>Request a manual verification review. A request is not proof of identity and does not grant a verified badge.</p>
+          <p>Status: <strong>{verificationStatus||"Not requested"}</strong></p>
+          {!verificationStatus&&<button type="button" onClick={()=>void requestVerification()} style={{padding:"11px 16px",border:0,borderRadius:12,background:"#d80621",color:"white",fontWeight:800}}>Request verification</button>}
+        </div>
+        <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
           <h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Email notifications</h3>
           <p style={{fontSize:14,color:"#675c63",lineHeight:1.5}}>Choose which dating activity emails you'd like to receive. Email delivery is being configured; enabling these settings does not send emails yet.</p>
           <label style={{display:"flex",alignItems:"center",gap:12,margin:"14px 0"}}><input type="checkbox" checked={emailMatches} disabled={emailSaving} onChange={e=>void saveEmailPreferences(e.target.checked,emailMessages)} style={{width:20,height:20,accentColor:"#d80621"}}/><span>Notify me about new matches</span></label>
@@ -262,6 +285,12 @@ export default function ProfilePage() {
           <span><strong>Share my profile photos</strong> with eligible members</span>
         </label>
         <p style={{fontSize:13,color:"#786c71",lineHeight:1.5}}>Your selections are saved automatically when you change them. Making your profile private removes it from new Discovery results. Existing matches may remain visible; temporary photo links can work for up to two minutes.</p>
+      </div>}
+      {tab==="settings"&&userId&&<div style={{marginTop:24,padding:18,border:"1px solid #efc6ce",borderRadius:16}}>
+        <h3 style={{color:"#a00020"}}>Delete my account</h3>
+        <p style={{fontSize:14,lineHeight:1.5}}>Permanently deletes your ehdate account, profile, photos, matches and messages. This cannot be undone. Type DELETE MY ACCOUNT to confirm.</p>
+        <input aria-label="Confirm account deletion" value={deleteConfirm} onChange={e=>setDeleteConfirm(e.target.value)} placeholder="DELETE MY ACCOUNT" style={{width:"100%",boxSizing:"border-box",padding:12,border:"1px solid #e2b7c0",borderRadius:10,fontSize:16}}/>
+        <button type="button" disabled={deleteConfirm!=="DELETE MY ACCOUNT"||deleting} onClick={()=>void deleteAccount()} style={{marginTop:12,padding:"12px 18px",background:"#a00020",color:"white",border:0,borderRadius:12,fontWeight:800,opacity:deleteConfirm!=="DELETE MY ACCOUNT"?0.5:1}}>{deleting?"Deleting…":"Permanently delete account"}</button>
       </div>}
       {tab==="settings"&&<p style={{marginTop:24}}><a href="/profile/photos" style={{color:"#d80621",fontWeight:700}}>Manage your profile photos →</a></p>}</section>
     </div>
