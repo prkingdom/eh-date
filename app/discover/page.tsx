@@ -45,7 +45,7 @@ export default function Discover(){
  async function swipe(target:string,decision:"YEH"|"NEH"){
   if(!supabase||!userId||swipeLock.current)return;
   swipeLock.current=true;setBusy(true);setMessage("");
-  setDragging(false);setFlying(true);setDragX(decision==="YEH"?window.innerWidth+260:-(window.innerWidth+260));
+  setDragging(false);setFlying(true);setDragX(decision==="YEH"?Math.max(window.innerWidth+260,Math.abs(dragX)+window.innerWidth): -Math.max(window.innerWidth+260,Math.abs(dragX)+window.innerWidth));
   await new Promise(resolve=>setTimeout(resolve,320));
   const {data:isMatch,error}=await supabase.rpc("submit_swipe",{p_target_id:target,p_decision:decision});
   if(error)setMessage("Could not record your choice: "+error.message);
@@ -87,7 +87,7 @@ export default function Discover(){
      </div>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
-    <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(Math.max(-180,Math.min(180,dx)));}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");else setDragX(0);}}>
+    <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(dx);}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");else setDragX(0);}}>
      {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{position:"relative",isolation:"isolate"}}>
      {members[1]&&<div aria-hidden="true" style={{position:"absolute",inset:"10px 12px 0",background:"white",borderRadius:24,boxShadow:"0 8px 30px #70132314",transform:flying?"scale(1)":"scale(.97)",transition:"transform .32s ease",padding:24,overflow:"hidden",zIndex:0}}><div style={{height:60,background:"#fff1f3",borderRadius:30}}/><div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"grid",placeItems:"center",marginTop:16,borderRadius:12,color:"white",fontSize:70}}>♥</div><h2>{members[1].display_name}, {members[1].age}</h2></div>}
      <div style={{position:"relative",zIndex:1,background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:`translateX(${dragX}px) rotate(${Math.max(-16,Math.min(16,dragX/35))}deg)`,opacity:flying?0.7:1,transition:dragging?"none":flying?"transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease":"transform .3s cubic-bezier(.2,.8,.2,1)",touchAction:"pan-y",willChange:"transform"}}>
