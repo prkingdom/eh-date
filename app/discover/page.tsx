@@ -94,10 +94,10 @@ export default function Discover(){
  .eh-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #d80621;box-shadow:0 2px 7px #6c122c35;pointer-events:auto;cursor:grab;margin-top:-9px}
  .eh-range::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:#fff;border:3px solid #d80621;box-shadow:0 2px 7px #6c122c35;pointer-events:auto;cursor:grab}
  `}</style><main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
-  <SiteNav/>
-  <div style={{maxWidth:1000,margin:"auto",padding:"12px 12px 100px"}}>
+  <SiteNav onFiltersClick={()=>setSettingsOpen(v=>!v)} filtersOpen={settingsOpen}/>
+  <div className="eh-discovery-content" style={{maxWidth:1000,margin:"auto",padding:"12px 12px 100px"}}>
    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:12,marginTop:4,alignItems:"start"}}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",padding:"0 2px"}}>
+    <div className="eh-discovery-toolbar" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",padding:"0 2px"}}>
       <h1 style={{margin:0,fontSize:24,fontWeight:900,color:"#272126"}}>Discover</h1>
       <button type="button" aria-expanded={settingsOpen} aria-controls="discovery-filters" onClick={()=>setSettingsOpen(v=>!v)} style={{display:"inline-flex",alignItems:"center",gap:8,border:"1px solid #eed0d7",borderRadius:24,background:"white",color:"#b31c39",fontWeight:800,fontSize:14,padding:"11px 17px",cursor:"pointer",boxShadow:"0 3px 10px #7013230d"}}>☷ Filters {settingsOpen?"▲":"▼"}</button>
      </div>
