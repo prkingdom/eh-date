@@ -1,0 +1,24 @@
+"use client";
+import {useEffect,useState} from "react";
+import {createClient} from "@supabase/supabase-js";
+const supabase=process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY):null;
+type Report={id:number;reporter_id:string;reported_id:string;reason:string;details:string|null;message_snapshot?:string;created_at:string};
+type Review={report_type:string;report_id:number;status:string};
+type Verify={user_id:string;status:string;submitted_at:string};
+export default function ModerationPage(){
+ const [authorized,setAuthorized]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(""),[profiles,setProfiles]=useState<Report[]>([]),[messages,setMessages]=useState<Report[]>([]),[reviews,setReviews]=useState<Review[]>([]),[verifications,setVerifications]=useState<Verify[]>([]);
+ async function request(method:"GET"|"POST",body?:object){
+  if(!supabase)throw Error("Not configured");
+  const {data:{session}}=await supabase.auth.getSession();if(!session)throw Error("Sign in required");
+  const response=await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL+"/functions/v1/moderation-admin",{method,headers:{"Authorization":"Bearer "+session.access_token,"apikey":process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const result=await response.json();if(!response.ok)throw Error(result.error||"Request failed");return result;
+ }
+ async function load(){try{const result=await request("GET");setAuthorized(true);setProfiles(result.profiles||[]);setMessages(result.messages||[]);setReviews(result.reviews||[]);setVerifications(result.verifications||[]);setError("");}catch(e){setError(e instanceof Error?e.message:"Unable to load");}finally{setLoading(false);}}
+ useEffect(()=>{void load();},[]);
+ async function act(body:object){try{await request("POST",body);await load();}catch(e){setError(e instanceof Error?e.message:"Action failed");}}
+ return <main style={{maxWidth:900,margin:"30px auto",padding:20,fontFamily:"Arial,sans-serif"}}><a href="/">♥ ehdate.</a><h1>Moderation dashboard</h1>{loading?<p>Loading…</p>:!authorized?<p>Access restricted to authorized moderators.</p>:<>
+ <p>Private reports and verification requests. Review evidence before taking action.</p>
+ {([{title:"Profile reports",type:"profile",rows:profiles},{title:"Message reports",type:"message",rows:messages}] as const).map(group=><section key={group.type}><h2>{group.title}</h2>{group.rows.length===0&&<p>No reports.</p>}{group.rows.map(r=><article key={r.id} style={{border:"1px solid #ead5da",borderRadius:12,padding:16,marginBottom:12}}><strong>{r.reason}</strong><p>Reported member: {r.reported_id}</p><p>Details: {r.details||"None provided"}</p>{r.message_snapshot&&<blockquote style={{whiteSpace:"pre-wrap",background:"#fff1f3",padding:12}}>{r.message_snapshot}</blockquote>}<small>{new Date(r.created_at).toLocaleString("en-CA")}</small><p>Status: {reviews.find(v=>v.report_type===group.type&&v.report_id===r.id)?.status||"open"}</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>void act({action:"review",type:group.type,id:r.id,status:"dismissed"})}>Dismiss</button><button onClick={()=>void act({action:"review",type:group.type,id:r.id,status:"actioned"})}>Mark actioned</button><button onClick={()=>{if(confirm("Suspend this account for 24 hours?"))void act({action:"suspend",user_id:r.reported_id,duration:"24h"});}}>Suspend 24h</button><button onClick={()=>{if(confirm("Suspend this account for 7 days?"))void act({action:"suspend",user_id:r.reported_id,duration:"7d"});}}>Suspend 7d</button><button onClick={()=>{if(confirm("Ban this account?"))void act({action:"suspend",user_id:r.reported_id,duration:"ban"});}}>Ban</button></div></article>)}</section>)}
+ <section><h2>Verification requests</h2>{verifications.length===0&&<p>No pending requests.</p>}{verifications.map(v=><article key={v.user_id} style={{padding:14,border:"1px solid #ddd",borderRadius:12,marginBottom:10}}><p>Member: {v.user_id}</p><p>Requested: {new Date(v.submitted_at).toLocaleString("en-CA")}</p><p>Do not approve without an independent identity verification process.</p><button onClick={()=>void act({action:"verify",user_id:v.user_id,status:"rejected"})}>Reject</button></article>)}</section>
+ </>}{error&&<p role="alert" style={{color:"#a00020"}}>{error}</p>}</main>;
+}
