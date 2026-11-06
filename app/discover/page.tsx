@@ -95,11 +95,13 @@ export default function Discover(){
  .eh-range::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:#fff;border:3px solid #d80621;box-shadow:0 2px 7px #6c122c35;pointer-events:auto;cursor:grab}
  `}</style><main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
   <SiteNav/>
-  <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
-   <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
-    <section style={{background:"white",borderRadius:22,padding:24}}>
-     <button type="button" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(v=>!v)} style={{border:0,background:"transparent",fontWeight:800,fontSize:17,color:"#d80621",cursor:"pointer",padding:0}}>☷ Filters {settingsOpen?"▲":"▼"}</button>
-     {settingsOpen&&<div style={{marginTop:20}}>
+  <div style={{maxWidth:1000,margin:"auto",padding:"12px 12px 100px"}}>
+   <div style={{display:"grid",gridTemplateColumns:"1fr",gap:12,marginTop:4,alignItems:"start"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",padding:"0 2px"}}>
+      <h1 style={{margin:0,fontSize:24,fontWeight:900,color:"#272126"}}>Discover</h1>
+      <button type="button" aria-expanded={settingsOpen} aria-controls="discovery-filters" onClick={()=>setSettingsOpen(v=>!v)} style={{display:"inline-flex",alignItems:"center",gap:8,border:"1px solid #eed0d7",borderRadius:24,background:"white",color:"#b31c39",fontWeight:800,fontSize:14,padding:"11px 17px",cursor:"pointer",boxShadow:"0 3px 10px #7013230d"}}>☷ Filters {settingsOpen?"▲":"▼"}</button>
+     </div>
+     {settingsOpen&&<section id="discovery-filters" style={{background:"white",borderRadius:20,padding:"18px 20px",boxShadow:"0 6px 24px #7013230d"}}><div style={{marginTop:0}}>
      {loading?<p>Loading…</p>:!userId?<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to continue.</p>:<>
       {!hasProfile&&<p>First <a href="/profile" style={{color:"#c6001d"}}>complete your profile</a>.</p>}
       <div style={{marginTop:14}}>
@@ -122,15 +124,19 @@ export default function Discover(){
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
      </div>}
-     {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
-    </section>
-    {lastNeh&&<button type="button" disabled={undoBusy||busy} onClick={()=>void undoNeh()} style={{border:"1px solid #d80621",borderRadius:20,background:"white",color:"#d80621",fontWeight:800,padding:12,cursor:"pointer"}}>↶ Undo last NEH</button>}
+</section>}
+          {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
+
+     {lastNeh&&<button type="button" disabled={undoBusy||busy} onClick={()=>void undoNeh()} style={{alignSelf:"flex-start",border:"1px solid #d80621",borderRadius:20,background:"white",color:"#d80621",fontWeight:800,padding:12,cursor:"pointer"}}>↶ Undo last NEH</button>}
     <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(dx);}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");else setDragX(0);}}>
      {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{position:"relative",isolation:"isolate"}}>
      {members[1]&&<div aria-hidden="true" style={{position:"absolute",inset:"10px 12px 0",background:"white",borderRadius:24,boxShadow:"0 8px 30px #70132314",transform:flying?"scale(1)":"scale(.97)",transition:"transform .32s ease",padding:24,overflow:"hidden",zIndex:0}}><div style={{height:60,background:"#fff1f3",borderRadius:30}}/><div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"grid",placeItems:"center",marginTop:16,borderRadius:12,color:"white",fontSize:70}}>♥</div><h2>{members[1].display_name}, {members[1].age}</h2></div>}
      <div style={{position:"relative",zIndex:1,background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:`translateX(${dragX}px) rotate(${Math.max(-16,Math.min(16,dragX/35))}deg)`,opacity:flying?0.7:1,transition:dragging?"none":flying?"transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease":"transform .3s cubic-bezier(.2,.8,.2,1)",touchAction:"pan-y",willChange:"transform"}}>
       {(dragging||flying)&&<div style={{textAlign:"center",fontWeight:900,paddingTop:10,color:dragX>0?"#15803d":"#a52640"}}>{dragX>0?"♥ YEH":"✕ NEH"}</div>}
-      <div style={{display:"flex",gap:12,justifyContent:"center",padding:"18px 20px"}}>
+      <div style={{padding:"15px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+        <div style={{minWidth:0}}><h2 style={{margin:0,fontSize:23,fontWeight:900,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{member.display_name}, {member.age}</h2><p style={{margin:"5px 0 0",fontSize:13,color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p></div>
+       </div>
+      <div style={{display:"flex",gap:12,justifyContent:"center",padding:"12px 20px 16px"}}>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
       </div>
@@ -143,8 +149,6 @@ export default function Discover(){
        </div>}</>:<span aria-label="No profile photo">♥</span>}
       </div>
       <div style={{padding:24}}>
-       <h2 style={{margin:"0 0 10px"}}>{member.display_name}, {member.age}</h2>
-       <p style={{color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p>
        <p style={{lineHeight:1.6,whiteSpace:"pre-wrap",}}>{member.bio||"Say hello!"}</p>
        {member.relationship_goal&&<p style={{fontWeight:800,color:"#a52640",margin:"14px 0"}}>♥ {member.relationship_goal}</p>}
        {member.sexual_orientation&&<p style={{color:"#a52640"}}>Orientation: {member.sexual_orientation}</p>}
