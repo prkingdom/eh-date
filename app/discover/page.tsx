@@ -136,7 +136,7 @@ export default function Discover(){
       <div style={{padding:"15px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
         <div style={{minWidth:0}}><h2 style={{margin:0,fontSize:23,fontWeight:900,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{member.display_name}, {member.age}</h2><p style={{margin:"5px 0 0",fontSize:13,color:"#a2263d"}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</p></div>
        </div>
-      <div style={{display:"flex",gap:12,justifyContent:"center",padding:"12px 20px 16px"}}>
+      <div className="eh-desktop-swipe-actions" style={{display:"flex",gap:12,justifyContent:"center",padding:"12px 20px 16px"}}>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
       </div>
