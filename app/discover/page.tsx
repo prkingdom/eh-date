@@ -11,7 +11,8 @@ export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[visible,setVisible]=useState(false);
  const [radius,setRadius]=useState<number|null>(null),[hasLocation,setHasLocation]=useState(false),[locating,setLocating]=useState(false);
- const [approvedIds,setApprovedIds]=useState<string[]>([]);\n const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
+ const [approvedIds,setApprovedIds]=useState<string[]>([]);
+ const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
  const [lastNeh,setLastNeh]=useState(""),[undoBusy,setUndoBusy]=useState(false);
  const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[flying,setFlying]=useState(false),[matchName,setMatchName]=useState("");
