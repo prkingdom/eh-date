@@ -3,3 +3,5 @@
 @media(max-width:650px){body{padding-bottom:78px}.eh-mobile-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:white;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #f0d7db;box-shadow:0 -5px 20px #45111a12;padding:8px 4px max(8px,env(safe-area-inset-bottom))}.eh-mobile-nav a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#78636c;font-size:11px;font-weight:700;min-width:60px}.eh-mobile-nav a[aria-current=page]{color:#d80621}.eh-mobile-nav a span:last-child{white-space:nowrap}header nav[aria-label="Main navigation"]{display:none!important}}
 
 @media(max-width:650px){.eh-header-filters{display:inline-flex!important} .eh-discovery-toolbar{display:none!important} .eh-discovery-content{padding-top:4px!important}}
+
+@media(max-width:650px){.eh-desktop-swipe-actions{display:none!important}}
