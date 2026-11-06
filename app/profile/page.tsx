@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false),[hasPhoto,setHasPhoto]=useState(false);
+  const [emailMatches,setEmailMatches]=useState(false),[emailMessages,setEmailMessages]=useState(false),[emailSaving,setEmailSaving]=useState(false);
   const [excludedNames,setExcludedNames]=useState<string[]>([]),[newExcludedName,setNewExcludedName]=useState(""),[nameSaving,setNameSaving]=useState(false);
 
   useEffect(() => {
@@ -77,6 +78,8 @@ export default function ProfilePage() {
         .select("is_discoverable,share_photos,excluded_names").eq("user_id",authData.user.id).maybeSingle();
       if(privacyError)setMessage("Could not load privacy settings: "+privacyError.message);
       if(privacy){setIsPublic(privacy.is_discoverable);setSharePhotos(privacy.share_photos);setExcludedNames(privacy.excluded_names??[]);}
+      const {data:emailPrefs}=await supabase.from("email_notification_preferences").select("new_matches,new_messages").eq("user_id",authData.user.id).maybeSingle();
+      if(emailPrefs){setEmailMatches(emailPrefs.new_matches);setEmailMessages(emailPrefs.new_messages);}
       const {data:photos,error:photoError}=await supabase.storage.from("profile-photos").list(authData.user.id,{limit:10});
       if(photoError)setMessage("Could not check photos: "+photoError.message);
       else { const paths=(photos??[]).filter(p=>p.name&&!p.name.startsWith(".")).slice(0,6).map(p=>authData.user.id+"/"+p.name); setHasPhoto(paths.length>0); if(paths.length){const {data:links}=await supabase.storage.from("profile-photos").createSignedUrls(paths,120);setPhotos((links??[]).map(p=>p.signedUrl).filter((src):src is string=>typeof src==="string"));} }
@@ -99,6 +102,14 @@ export default function ProfilePage() {
     setPrivacySaving(false);
   }
 
+  async function saveEmailPreferences(matches:boolean,messages:boolean){
+    if(!supabase||!userId||emailSaving)return;
+    setEmailSaving(true);setMessage("");
+    const {data,error}=await supabase.from("email_notification_preferences").upsert({user_id:userId,new_matches:matches,new_messages:messages,updated_at:new Date().toISOString()},{onConflict:"user_id"}).select("new_matches,new_messages").single();
+    if(error)setMessage("Could not save email preferences: "+error.message);
+    else if(data){setEmailMatches(data.new_matches);setEmailMessages(data.new_messages);setMessage("Email notification preferences saved.");}
+    setEmailSaving(false);
+  }
   async function saveExcludedNames(next:string[]){
     if(!supabase||!userId||nameSaving)return;
     setNameSaving(true);setMessage("");
@@ -224,6 +235,12 @@ export default function ProfilePage() {
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {tab==="settings"&&userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
         <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
+        <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
+          <h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Email notifications</h3>
+          <p style={{fontSize:14,color:"#675c63",lineHeight:1.5}}>Choose which dating activity emails you'd like to receive. Email delivery is being configured; enabling these settings does not send emails yet.</p>
+          <label style={{display:"flex",alignItems:"center",gap:12,margin:"14px 0"}}><input type="checkbox" checked={emailMatches} disabled={emailSaving} onChange={e=>void saveEmailPreferences(e.target.checked,emailMessages)} style={{width:20,height:20,accentColor:"#d80621"}}/><span>Notify me about new matches</span></label>
+          <label style={{display:"flex",alignItems:"center",gap:12}}><input type="checkbox" checked={emailMessages} disabled={emailSaving} onChange={e=>void saveEmailPreferences(emailMatches,e.target.checked)} style={{width:20,height:20,accentColor:"#d80621"}}/><span>Notify me about new messages</span></label>
+        </div>
         <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
           <h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Names I don’t want to see</h3>
           <p style={{fontSize:14,lineHeight:1.6,color:"#675c63"}}>Have a name that's a dealbreaker? Add it here, and profiles with that first name won't appear in your Discovery feed. Only you can see this list.</p>
