@@ -14,6 +14,7 @@ export default function Discover(){
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
+ const [lastNeh,setLastNeh]=useState(""),[undoBusy,setUndoBusy]=useState(false);
  const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[flying,setFlying]=useState(false),[matchName,setMatchName]=useState("");
  const touchStart=useRef<{x:number;y:number}|null>(null);
  const swipeLock=useRef(false);
@@ -54,9 +55,18 @@ export default function Discover(){
     setMatchName(members.find(m=>m.user_id===target)?.display_name||"your new connection");
     setMessage("");
    }else setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");
+   if(decision==="NEH")setLastNeh(target);else setLastNeh("");
    setMembers(m=>m.filter(p=>p.user_id!==target));
   }
   setFlying(false);setDragX(0);setBusy(false);swipeLock.current=false;
+ }
+ async function undoNeh(){
+  if(!supabase||!lastNeh||undoBusy)return;
+  setUndoBusy(true);const {data,error}=await supabase.rpc("undo_last_neh");
+  if(error)setMessage("Undo failed: "+error.message);
+  else if(data){setLastNeh("");setMessage("Last NEH undone.");await refresh();}
+  else{setLastNeh("");setMessage("Undo expired. You can undo your most recent NEH within 10 minutes.");}
+  setUndoBusy(false);
  }
  const member=members[0];
  useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);
@@ -87,6 +97,7 @@ export default function Discover(){
      </div>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
+    {lastNeh&&<button type="button" disabled={undoBusy||busy} onClick={()=>void undoNeh()} style={{border:"1px solid #d80621",borderRadius:20,background:"white",color:"#d80621",fontWeight:800,padding:12,cursor:"pointer"}}>↶ Undo last NEH</button>}
     <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(dx);}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");else setDragX(0);}}>
      {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{position:"relative",isolation:"isolate"}}>
      {members[1]&&<div aria-hidden="true" style={{position:"absolute",inset:"10px 12px 0",background:"white",borderRadius:24,boxShadow:"0 8px 30px #70132314",transform:flying?"scale(1)":"scale(.97)",transition:"transform .32s ease",padding:24,overflow:"hidden",zIndex:0}}><div style={{height:60,background:"#fff1f3",borderRadius:30}}/><div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"grid",placeItems:"center",marginTop:16,borderRadius:12,color:"white",fontSize:70}}>♥</div><h2>{members[1].display_name}, {members[1].age}</h2></div>}
