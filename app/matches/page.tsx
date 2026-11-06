@@ -9,7 +9,7 @@ type Match={user_id:string;display_name:string;age:number;city:string|null;provi
 function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:string)=>void;onBlocked:(id:string)=>void;busy:boolean}){
  const [photos,setPhotos]=useState<string[]>([]);
  const [photoIndex,setPhotoIndex]=useState(0);
- const [photoError,setPhotoError]=useState("");
+ const [photoError,setPhotoError]=useState("");\n const [approved,setApproved]=useState(false);\n useEffect(()=>{if(!supabase)return;void supabase.rpc("approved_photo_review_ids",{member_ids:[match.user_id]}).then(({data})=>setApproved((data??[]).some((v:{user_id:string})=>v.user_id===match.user_id)));},[match.user_id]);
  useEffect(()=>{let active=true;async function load(){
   if(!supabase||!match.photos_shared)return;
   const {data:files,error}=await supabase.storage.from("profile-photos").list(match.user_id,{limit:6,sortBy:{column:"created_at",order:"asc"}});
@@ -30,7 +30,7 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
     </div>}</>:<span aria-label="No shared photo">♥</span>}
   </div>
   <div style={{padding:22}}>
-   <h2 style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}</h2>
+   <h2 style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<span title="Profile photos reviewed" aria-label="Profile photos reviewed" style={{color:"#1687e8",fontSize:20,marginLeft:7}}>●✓</span>}</h2>
    <p style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
    <p style={{lineHeight:1.6,color:"#655d63"}}>{match.bio||"A new connection on ehdate."}</p>
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
