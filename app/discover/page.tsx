@@ -56,7 +56,7 @@ export default function Discover(){
  },[member?.user_id,visible]);
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
   <header style={{background:"#d80621",padding:"20px max(20px,6vw)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
-   <a href="/" style={{fontSize:28,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a><nav style={{display:"flex",gap:18}}><a href="/matches" style={{color:"white"}}>Matches</a><a href="/profile" style={{color:"white"}}>My profile</a></nav>
+   <a href="/" style={{fontSize:28,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a><nav style={{display:"flex",gap:18}}><a href="/likes" style={{color:"white"}}>Likes ♥</a><a href="/matches" style={{color:"white"}}>Matches</a><a href="/profile" style={{color:"white"}}>My profile</a></nav>
   </header>
   <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
