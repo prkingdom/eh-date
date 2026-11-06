@@ -4,7 +4,7 @@ import {createClient} from "@supabase/supabase-js";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
 type Match={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;matched_at:string;photos_shared:boolean};
-function MatchCard({match}:{match:Match}){
+function MatchCard({match,onUnmatch,busy}:{match:Match;onUnmatch:(id:string)=>void;busy:boolean}){
  const [photos,setPhotos]=useState<string[]>([]);
  const [photoIndex,setPhotoIndex]=useState(0);
  const [photoError,setPhotoError]=useState("");
@@ -32,6 +32,7 @@ function MatchCard({match}:{match:Match}){
    <p style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
    <p style={{lineHeight:1.6,color:"#655d63"}}>{match.bio||"A new connection on ehdate."}</p>
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
+   <button type="button" disabled={busy} onClick={()=>onUnmatch(match.user_id)} style={{marginTop:12,padding:"9px 14px",border:"1px solid #e6c4cc",borderRadius:12,background:"white",color:"#a72b43",fontWeight:700,cursor:busy?"wait":"pointer"}}>{busy?"Please wait…":"Unmatch"}</button>
    <p style={{fontSize:13,color:"#82747b",marginTop:16}}>Matched {new Date(match.matched_at).toLocaleDateString("en-CA",{year:"numeric",month:"short",day:"numeric"})}</p>
   </div>
  </article>;
@@ -39,6 +40,17 @@ function MatchCard({match}:{match:Match}){
 export default function MatchesPage(){
  const [loading,setLoading]=useState(true),[signedIn,setSignedIn]=useState(false);
  const [matches,setMatches]=useState<Match[]>([]),[error,setError]=useState("");
+ const [unmatching,setUnmatching]=useState<string|null>(null);
+ async function unmatch(otherId:string){
+  if(!supabase||unmatching)return;
+  if(!window.confirm("Unmatch this person? They will disappear from your Matches, and this cannot be undone."))return;
+  setUnmatching(otherId);setError("");
+  const {data,error:unmatchError}=await supabase.rpc("unmatch_member",{p_other_user_id:otherId});
+  if(unmatchError)setError("Could not unmatch: "+unmatchError.message);
+  else if(data===true)setMatches(current=>current.filter(m=>m.user_id!==otherId));
+  else setError("This match is no longer available. Refresh the page.");
+  setUnmatching(null);
+ }
  useEffect(()=>{async function load(){
   if(!supabase){setError("Account connection unavailable.");setLoading(false);return;}
   const {data:{user},error:authError}=await supabase.auth.getUser();
@@ -59,7 +71,7 @@ export default function MatchesPage(){
     <p style={{color:"#b31832",fontWeight:700,fontSize:19}}>{matches.length} {matches.length===1?"match":"matches"}</p>
     {matches.length===0&&!error&&<div style={{background:"white",borderRadius:18,padding:26}}><h2>No matches yet</h2><p>When you and another member both choose YEH, they'll appear here.</p><a href="/discover" style={{color:"#c6001d"}}>Discover members</a></div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,280px),1fr))",gap:24,marginTop:24}}>
-     {matches.map(match=><MatchCard key={match.user_id} match={match}/>)}
+     {matches.map(match=><MatchCard key={match.user_id} match={match} onUnmatch={id=>void unmatch(id)} busy={unmatching===match.user_id}/>)}
     </div>
    </>}
    {error&&<p role="alert" style={{color:"#a0001c"}}>{error}</p>}
