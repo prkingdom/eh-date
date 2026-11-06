@@ -89,7 +89,13 @@ export default function Discover(){
    if(active)setPhotoUrls((urls??[]).map(p=>p.signedUrl).filter((signedUrl): signedUrl is string => typeof signedUrl === "string"));
   }void loadPhotos();return()=>{active=false;};
  },[member?.user_id,visible]);
- return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
+ return <><style>{`
+ .eh-range{position:absolute;left:0;top:0;width:100%;height:44px;margin:0;background:transparent;appearance:none;-webkit-appearance:none;pointer-events:none;outline-offset:3px}
+ .eh-range::-webkit-slider-runnable-track{height:7px;background:transparent}
+ .eh-range::-moz-range-track{height:7px;background:transparent}
+ .eh-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #d80621;box-shadow:0 2px 7px #6c122c35;pointer-events:auto;cursor:grab;margin-top:-9px}
+ .eh-range::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:#fff;border:3px solid #d80621;box-shadow:0 2px 7px #6c122c35;pointer-events:auto;cursor:grab}
+ `}</style><main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#272126"}}>
   <SiteNav/>
   <div style={{maxWidth:1000,margin:"auto",padding:"32px 18px"}}>
    <div style={{display:"grid",gridTemplateColumns:"1fr",gap:24,marginTop:28,alignItems:"start"}}>
@@ -98,12 +104,22 @@ export default function Discover(){
      {settingsOpen&&<div style={{marginTop:20}}>
      {loading?<p>Loading…</p>:!userId?<p><a href="/account" style={{color:"#c6001d"}}>Sign in</a> to continue.</p>:<>
       {!hasProfile&&<p>First <a href="/profile" style={{color:"#c6001d"}}>complete your profile</a>.</p>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-       <label>Minimum age<input type="number" min={18} max={100} value={min} onChange={e=>setMin(Number(e.target.value))} style={inputStyle}/></label>
-       <label>Maximum age<input type="number" min={18} max={100} value={max} onChange={e=>setMax(Number(e.target.value))} style={inputStyle}/></label>
+      <div style={{marginTop:14}}>
+       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontWeight:800}}><span>Age range</span><span style={{color:"#d80621"}}>{min} – {max===100?"100+":max} years</span></div>
+       <div style={{position:"relative",height:44,margin:"12px 9px 0"}}>
+        <div style={{position:"absolute",top:18,left:0,right:0,height:7,borderRadius:10,background:"#f0d5dc"}}/>
+        <div style={{position:"absolute",top:18,left:`${((min-18)/82)*100}%`,width:`${((max-min)/82)*100}%`,height:7,borderRadius:10,background:"#d80621",pointerEvents:"none"}}/>
+        <input aria-label="Minimum age" type="range" min={18} max={100} step={1} value={min} onChange={e=>setMin(Math.min(Number(e.target.value),max))} className="eh-range eh-range-min" style={{zIndex:min>=max-1?4:2}}/>
+        <input aria-label="Maximum age" type="range" min={18} max={100} step={1} value={max} onChange={e=>setMax(Math.max(Number(e.target.value),min))} className="eh-range eh-range-max" style={{zIndex:3}}/>
+       </div>
+       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#8b7780"}}><span>18</span><span>100+</span></div>
       </div>
       <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...inputStyle,marginTop:8}}>{provinces.map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
-      <label style={{display:"block",marginTop:16}}>Distance filter<select value={radius??""} onChange={e=>setRadius(e.target.value?Number(e.target.value):null)} style={{...inputStyle,marginTop:8}}><option value="">Anywhere (province filter applies)</option>{[10,25,50,100,250,500].map(k=><option key={k} value={k}>{k} km</option>)}</select></label>
+      <div style={{marginTop:20}}>
+       <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><strong>Distance</strong><strong style={{color:"#d80621"}}>{radius===null?"Anywhere":radius+" km"}</strong></div>
+       <input aria-label="Maximum distance" type="range" min={0} max={500} step={5} value={radius??0} onChange={e=>setRadius(Number(e.target.value)===0?null:Math.max(5,Number(e.target.value)))} style={{width:"100%",marginTop:14,accentColor:"#d80621",height:24,cursor:"pointer"}}/>
+       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#8b7780"}}><span>Anywhere</span><span>500 km</span></div>
+      </div>
       <button type="button" disabled={locating} onClick={()=>void shareApproxLocation()} style={{marginTop:10,padding:"10px 14px",borderRadius:12,border:"1px solid #d80621",background:"white",color:"#d80621"}}>{locating?"Getting location…":hasLocation?"Update approximate location":"Share approximate location"}</button><p style={{fontSize:12,color:"#76646d"}}>Optional. Your coordinates are rounded to roughly 1 km and kept private. Distance results require both members to share a location.</p>
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
