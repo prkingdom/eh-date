@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useRef,useState} from "react";
+import {Suspense,useCallback,useEffect,useRef,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
 import {useSearchParams} from "next/navigation";
 import SiteNav from "../components/SiteNav";
@@ -7,7 +7,7 @@ const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPAB
 const supabase=url&&key?createClient(url,key):null;
 type Match={user_id:string;display_name:string;age:number;city:string|null;matched_at:string};
 type Message={id:number;user_a:string;user_b:string;sender_id:string;body:string;created_at:string};
-export default function MessagesPage(){
+function MessagesContent(){
  const params=useSearchParams(),requested=params.get("with");
  const [userId,setUserId]=useState(""),[matches,setMatches]=useState<Match[]>([]),[selected,setSelected]=useState("");
  const [messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
@@ -79,7 +79,7 @@ export default function MessagesPage(){
      </div>
      <form onSubmit={e=>{e.preventDefault();void send();}} style={{display:"flex",gap:9,padding:14,borderTop:"1px solid #f0e1e5"}}>
       <input aria-label="Write a message" value={draft} onChange={e=>setDraft(e.target.value)} maxLength={2000} placeholder="Write a message…" style={{flex:1,minWidth:0,border:"1px solid #e8d5dc",borderRadius:25,padding:"13px 15px",fontSize:16}}/>
-      <button type="submit" disabled={sending||!draft.trim()} style={{background:"#d80621",color:"white",border:0,borderRadius:25,padding:"12px 17px",fontWeight:800,cursor:"pointer",opacity:sending||!draft.trim()?.6:1}}>{sending?"…":"Send"}</button>
+      <button type="submit" disabled={sending||!draft.trim()} style={{background:"#d80621",color:"white",border:0,borderRadius:25,padding:"12px 17px",fontWeight:800,cursor:"pointer",opacity:(sending||!draft.trim())?0.6:1}}>{sending?"…":"Send"}</button>
      </form>
     </div>
    </div>}
@@ -87,3 +87,4 @@ export default function MessagesPage(){
   </section>
  </main>;
 }
+export default function MessagesPage(){return <Suspense fallback={<main style={{padding:30}}>Loading messages…</main>}><MessagesContent/></Suspense>;}
