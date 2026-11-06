@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const [tab,setTab]=useState<"edit"|"preview"|"settings">("edit");
   const [photos,setPhotos]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isModerator,setIsModerator]=useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,6 +57,7 @@ export default function ProfilePage() {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData.user) { setLoading(false); return; }
       setUserId(authData.user.id);
+      setIsModerator(authData.user.app_metadata?.ehdate_role==="moderator");
       const { data, error } = await supabase.from("profiles")
         .select("display_name,date_of_birth,gender,city,province,bio,relationship_goal,interested_in,sexual_orientation,show_sexual_orientation,show_interested_in,interests,personality_prompts")
         .eq("user_id", authData.user.id).maybeSingle();
@@ -252,6 +254,7 @@ export default function ProfilePage() {
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {tab==="settings"&&userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
         <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
+        {isModerator&&<div style={{background:"white",border:"1px solid #f0c9d2",borderRadius:16,padding:18,marginBottom:22}}><h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Administrator tools</h3><p style={{fontSize:14,color:"#675c63",margin:"0 0 14px"}}>Review member reports, account suspensions, and verification requests.</p><a href="/moderation" style={{display:"inline-block",background:"#d80621",color:"white",textDecoration:"none",padding:"12px 18px",borderRadius:12,fontWeight:800}}>Open Moderation Dashboard →</a></div>}
         <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
           <h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Profile verification</h3>
           <p style={{fontSize:14,color:"#675c63"}}>Request a manual verification review. A request is not proof of identity and does not grant a verified badge.</p>
