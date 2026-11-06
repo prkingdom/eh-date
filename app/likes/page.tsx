@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
+import SiteNav from "../components/SiteNav";
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -26,12 +27,7 @@ export default function LikesPage(){
   setLoading(false);
  }void load();return()=>{active=false;};},[]);
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#292126"}}>
-  <header style={{background:"#d80621",padding:"18px max(18px,5vw)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-   <a href="/" style={{fontSize:27,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a>
-   <nav aria-label="Main navigation" style={{display:"flex",gap:16,flexWrap:"wrap",fontSize:14,fontWeight:700}}>
-    <a href="/discover" style={{color:"white"}}>Discover</a><a href="/likes" aria-current="page" style={{color:"white"}}>Likes ♥</a><a href="/matches" style={{color:"white"}}>Matches</a><a href="/profile" style={{color:"white"}}>My profile</a>
-   </nav>
-  </header>
+  <SiteNav/>
   <section style={{maxWidth:920,margin:"0 auto",padding:"38px 18px 80px"}}>
    <h1 style={{fontSize:36,margin:"0 0 8px"}}>Likes You <span style={{color:"#d80621"}}>♥</span></h1>
    <p style={{color:"#766a70",lineHeight:1.6,marginTop:0}}>Someone interested in you? Find out how many YEHs are waiting.</p>
