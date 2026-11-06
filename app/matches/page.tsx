@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
+import SiteNav from "../components/SiteNav";
 import SafetyActions from "../components/SafetyActions";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
@@ -63,10 +64,7 @@ export default function MatchesPage(){
   setLoading(false);
  }void load();},[]);
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#292126"}}>
-  <header style={{background:"#d80621",padding:"20px max(20px,6vw)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
-   <a href="/" style={{fontWeight:800,fontSize:28,color:"white",textDecoration:"none"}}>♥ ehdate.</a>
-   <nav style={{display:"flex",gap:16,flexWrap:"wrap"}}><a href="/discover" style={{color:"white",fontWeight:700}}>Discover</a><a href="/likes" style={{color:"white",fontWeight:700}}>Likes ♥</a><a href="/profile" style={{color:"white",fontWeight:700}}>My profile</a></nav>
-  </header>
+  <SiteNav/>
   <section style={{maxWidth:1000,margin:"45px auto",padding:"0 20px"}}>
    <h1 style={{fontSize:38,marginBottom:8}}>Your matches ♥</h1>
    {loading?<p>Loading your matches…</p>:!signedIn?<p><a href="/account" style={{color:"#c6001d",fontWeight:700}}>Sign in</a> to see your matches.</p>:<>
