@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import SiteNav from "../components/SiteNav";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -137,11 +138,12 @@ export default function ProfilePage() {
   }
 
   const fieldStyle = { display: "block", width: "100%", marginTop: 7, padding: 13, border: "1px solid #eadcde", borderRadius: 12, fontSize: 16, background: "#fff", color: "#29222a" } as const;
-  return <main style={{ minHeight: "100vh", background: "#fff5f5", color: "#29222a", padding: "32px 18px", fontFamily: "Arial, sans-serif" }}>
+  return <><SiteNav/><main style={{ minHeight: "100vh", background: "#fff5f5", color: "#29222a", padding: "32px 18px", fontFamily: "Arial, sans-serif" }}>
     <div style={{ maxWidth: 650, margin: "0 auto" }}>
       <a href="/" style={{ color: "#d80621", textDecoration: "none", fontSize: 30, fontWeight: 800 }}>♥ ehdate.</a>
       <section style={{ marginTop: 35, background: "white", padding: "30px 25px", borderRadius: 24, boxShadow: "0 12px 35px #3a1d270c" }}>
         <h1 style={{ marginTop: 0, fontSize: 32 }}>My Profile</h1>
+        {!loading&&userId&&(()=>{const items=[Boolean(profile.display_name&&profile.date_of_birth&&profile.gender&&profile.city&&profile.province),hasPhoto,Boolean(profile.bio.trim()),Boolean(profile.relationship_goal),profile.personality_prompts.some(p=>p.question&&p.answer.trim()),profile.interested_in.length>0];const done=items.filter(Boolean).length;return <div style={{background:"#fff3f5",borderRadius:18,padding:18,marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",gap:10,fontWeight:800,color:"#9c1d38"}}><span>Profile completion</span><span>{Math.round(done/items.length*100)}%</span></div><div role="progressbar" aria-label="Profile completion" aria-valuenow={Math.round(done/items.length*100)} aria-valuemin={0} aria-valuemax={100} style={{height:9,background:"#eed0d6",borderRadius:20,margin:"12px 0",overflow:"hidden"}}><div style={{width:(done/items.length*100)+"%",height:"100%",background:"#d80621",borderRadius:20}}/></div><p style={{fontSize:13,lineHeight:1.5,margin:"8px 0 0",color:"#685961"}}>{done===items.length?"Your profile is looking great!":"Complete your basics, add a photo, bio, relationship goal, personality prompt, and who you want to meet."}</p>{!hasPhoto&&<a href="/profile/photos" style={{display:"inline-block",marginTop:10,color:"#b61937",fontWeight:800}}>Add a profile photo →</a>}</div>})()}
         <p style={{ color: "#736871", lineHeight: 1.5 }}>Tell us a little about yourself. Your profile visibility and photo sharing are controlled in Privacy settings below.</p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:5,background:"#fff5f5",padding:6,borderRadius:18,margin:"24px 0"}}>{([["edit","✎ Edit profile"],["preview","♡ Preview"],["settings","⚙ Settings"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);setMessage("");}} style={{padding:"13px 4px",border:0,borderRadius:13,cursor:"pointer",fontWeight:800,background:tab===value?"#d80621":"transparent",color:tab===value?"white":"#5c5057"}}>{label}</button>)}</div>
         {loading ? <p>Loading your profile…</p> : !userId ? <p>Please <a href="/account">sign in</a> to create your profile.</p> :
@@ -219,5 +221,5 @@ export default function ProfilePage() {
       </div>}
       {tab==="settings"&&<p style={{marginTop:24}}><a href="/profile/photos" style={{color:"#d80621",fontWeight:700}}>Manage your profile photos →</a></p>}</section>
     </div>
-  </main>;
+  </main></>;
 }
