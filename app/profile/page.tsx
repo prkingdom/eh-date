@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false),[hasPhoto,setHasPhoto]=useState(false);
+  const [excludedNames,setExcludedNames]=useState<string[]>([]),[newExcludedName,setNewExcludedName]=useState(""),[nameSaving,setNameSaving]=useState(false);
 
   useEffect(() => {
     async function load() {
@@ -73,9 +74,9 @@ export default function ProfilePage() {
         personality_prompts: Array.isArray(data.personality_prompts)?data.personality_prompts.filter((p:unknown):p is {question:string;answer:string}=>typeof p==="object"&&p!==null&&typeof (p as {question?:unknown}).question==="string"&&typeof (p as {answer?:unknown}).answer==="string").slice(0,3):[]
       });
       const {data:privacy,error:privacyError}=await supabase.from("discovery_preferences")
-        .select("is_discoverable,share_photos").eq("user_id",authData.user.id).maybeSingle();
+        .select("is_discoverable,share_photos,excluded_names").eq("user_id",authData.user.id).maybeSingle();
       if(privacyError)setMessage("Could not load privacy settings: "+privacyError.message);
-      if(privacy){setIsPublic(privacy.is_discoverable);setSharePhotos(privacy.share_photos);}
+      if(privacy){setIsPublic(privacy.is_discoverable);setSharePhotos(privacy.share_photos);setExcludedNames(privacy.excluded_names??[]);}
       const {data:photos,error:photoError}=await supabase.storage.from("profile-photos").list(authData.user.id,{limit:10});
       if(photoError)setMessage("Could not check photos: "+photoError.message);
       else { const paths=(photos??[]).filter(p=>p.name&&!p.name.startsWith(".")).slice(0,6).map(p=>authData.user.id+"/"+p.name); setHasPhoto(paths.length>0); if(paths.length){const {data:links}=await supabase.storage.from("profile-photos").createSignedUrls(paths,120);setPhotos((links??[]).map(p=>p.signedUrl).filter((src):src is string=>typeof src==="string"));} }
@@ -96,6 +97,22 @@ export default function ProfilePage() {
       else {setIsPublic(confirmed.is_discoverable);setSharePhotos(confirmed.share_photos);setMessage("Privacy settings saved.");}
     }
     setPrivacySaving(false);
+  }
+
+  async function saveExcludedNames(next:string[]){
+    if(!supabase||!userId||nameSaving)return;
+    setNameSaving(true);setMessage("");
+    const {error}=await supabase.from("discovery_preferences").update({excluded_names:next,updated_at:new Date().toISOString()}).eq("user_id",userId);
+    if(error)setMessage("Could not save excluded names: "+error.message);
+    else{setExcludedNames(next);setNewExcludedName("");setMessage("Name preferences saved privately.");}
+    setNameSaving(false);
+  }
+  function addExcludedName(){
+    const name=newExcludedName.trim().replace(/\\s+/g," ");
+    if(!name||name.length>40||!(/^[\\p{L}\\p{M}' -]+$/u.test(name))){setMessage("Enter a name of up to 40 letters.");return;}
+    if(excludedNames.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase())){setMessage("That name is already excluded.");return;}
+    if(excludedNames.length>=20){setMessage("You can exclude up to 20 names.");return;}
+    void saveExcludedNames([...excludedNames,name]);
   }
 
   function setField<K extends keyof Profile>(field: K, value: Profile[K]) {
@@ -207,6 +224,16 @@ export default function ProfilePage() {
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {tab==="settings"&&userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
         <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
+        <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
+          <h3 style={{margin:"0 0 8px",color:"#a91e3c"}}>Names I don’t want to see</h3>
+          <p style={{fontSize:14,lineHeight:1.6,color:"#675c63"}}>Have a name that's a dealbreaker? Add it here, and profiles with that first name won't appear in your Discovery feed. Only you can see this list.</p>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <input aria-label="Name to exclude" value={newExcludedName} maxLength={40} onChange={e=>setNewExcludedName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addExcludedName();}}} placeholder="e.g. James" style={{flex:"1 1 160px",minWidth:0,padding:12,border:"1px solid #e5cdd3",borderRadius:12,fontSize:16}}/>
+            <button type="button" disabled={nameSaving||!newExcludedName.trim()} onClick={addExcludedName} style={{border:0,background:"#d80621",color:"white",borderRadius:12,padding:"12px 17px",fontWeight:800,cursor:"pointer"}}>{nameSaving?"Saving…":"Add name"}</button>
+          </div>
+          {excludedNames.length>0&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>{excludedNames.map(name=><span key={name} style={{display:"inline-flex",alignItems:"center",gap:8,background:"#fff0f2",borderRadius:22,padding:"8px 10px",fontSize:14,fontWeight:700,color:"#98263e"}}>{name}<button type="button" disabled={nameSaving} aria-label={"Remove "+name} onClick={()=>void saveExcludedNames(excludedNames.filter(n=>n!==name))} style={{border:0,background:"transparent",color:"#98263e",fontSize:18,cursor:"pointer"}}>×</button></span>)}</div>}
+          <p style={{fontSize:12,color:"#80727a",lineHeight:1.5}}>You can add up to 20 names. Matching is case-insensitive. Existing matches are not removed.</p>
+        </div>
         {!hasPhoto&&<p style={{fontSize:14,color:"#a60020",lineHeight:1.5}}>Upload at least one profile photo to appear in Discovery. Your privacy choices are still saved even without a photo. <a href="/profile/photos">Add photos</a>.</p>}
         <p style={{fontSize:14,lineHeight:1.6,color:"#62535b"}}>Choose whether other eligible signed-in members can find your profile and view your photos.</p>
         <label style={{display:"flex",alignItems:"center",gap:12,marginTop:14}}>
