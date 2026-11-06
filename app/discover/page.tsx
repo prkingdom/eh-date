@@ -6,12 +6,10 @@ import SafetyActions from "../components/SafetyActions";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
 type Member={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;relationship_goal:string|null;interests:string[]|null;personality_prompts:{question:string;answer:string}[]|null;sexual_orientation:string|null;interested_in:string[]|null};
-const provinces=[["","Anywhere in Canada"],["AB","Alberta"],["BC","British Columbia"],["MB","Manitoba"],["NB","New Brunswick"],["NL","Newfoundland and Labrador"],["NS","Nova Scotia"],["NT","Northwest Territories"],["NU","Nunavut"],["ON","Ontario"],["PE","Prince Edward Island"],["QC","Quebec"],["SK","Saskatchewan"],["YT","Yukon"]];
-const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadius:12,background:"white",fontSize:15};
 // Deployment sync: Discovery now shows complete profiles and top-positioned swipe controls.
 export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
- const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
+ const [min,setMin]=useState(18),[max,setMax]=useState(99),[visible,setVisible]=useState(false);
  const [radius,setRadius]=useState<number|null>(null),[hasLocation,setHasLocation]=useState(false),[locating,setLocating]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
@@ -26,11 +24,11 @@ export default function Discover(){
   if(!user){setLoading(false);return;}
   setUserId(user.id);
   const [pref,profile]=await Promise.all([
-   supabase.from("discovery_preferences").select("minimum_age,maximum_age,preferred_province,is_discoverable,share_photos,radius_km,latitude,longitude").eq("user_id",user.id).maybeSingle(),
+   supabase.from("discovery_preferences").select("minimum_age,maximum_age,is_discoverable,share_photos,radius_km,latitude,longitude").eq("user_id",user.id).maybeSingle(),
    supabase.from("profiles").select("user_id").eq("user_id",user.id).maybeSingle()
   ]);
   setHasProfile(Boolean(profile.data));
-  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setProvince(pref.data.preferred_province??"");setVisible(pref.data.is_discoverable);setRadius(pref.data.radius_km);setHasLocation(pref.data.latitude!==null&&pref.data.longitude!==null);}
+  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setVisible(pref.data.is_discoverable);setRadius(pref.data.radius_km);setHasLocation(pref.data.latitude!==null&&pref.data.longitude!==null);}
   if(pref.data?.is_discoverable)await refresh();
   setLoading(false);
  }void load();},[]);
@@ -39,7 +37,7 @@ export default function Discover(){
   if(!Number.isInteger(min)||!Number.isInteger(max)||min<18||max>100||min>max){setMessage("Choose a valid age range between 18 and 100.");return;}
 
   setBusy(true);setMessage("");
-  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:province||null,radius_km:radius,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:null,radius_km:radius,updated_at:new Date().toISOString()},{onConflict:"user_id"});
   if(error)setMessage(error.message);
   else{setMessage("Filters saved.");await refresh();setSettingsOpen(false);}
   setBusy(false);
@@ -114,13 +112,13 @@ export default function Discover(){
        </div>
        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#8b7780"}}><span>18</span><span>100+</span></div>
       </div>
-      <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...inputStyle,marginTop:8}}>{provinces.map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
+      
       <div style={{marginTop:20}}>
-       <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><strong>Distance</strong><strong style={{color:"#d80621"}}>{radius===null?"Anywhere":radius+" km"}</strong></div>
-       <input aria-label="Maximum distance" type="range" min={0} max={500} step={5} value={radius??0} onChange={e=>setRadius(Number(e.target.value)===0?null:Math.max(5,Number(e.target.value)))} style={{width:"100%",marginTop:14,accentColor:"#d80621",height:24,cursor:"pointer"}}/>
-       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#8b7780"}}><span>Anywhere</span><span>500 km</span></div>
+       <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><strong>Distance</strong><strong style={{color:"#d80621"}}>{radius===null?"Anywhere in Canada":radius+" km"}</strong></div>
+       <input aria-label="Maximum distance" type="range" min={5} max={505} step={5} value={radius??505} onChange={e=>setRadius(Number(e.target.value)===505?null:Number(e.target.value))} style={{width:"100%",marginTop:14,accentColor:"#d80621",height:24,cursor:"pointer"}}/>
+       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#8b7780"}}><span>5 km</span><span>Anywhere in Canada</span></div>
       </div>
-      <button type="button" disabled={locating} onClick={()=>void shareApproxLocation()} style={{marginTop:10,padding:"10px 14px",borderRadius:12,border:"1px solid #d80621",background:"white",color:"#d80621"}}>{locating?"Getting location…":hasLocation?"Update approximate location":"Share approximate location"}</button><p style={{fontSize:12,color:"#76646d"}}>Optional. Your coordinates are rounded to roughly 1 km and kept private. Distance results require both members to share a location.</p>
+      <button type="button" disabled={locating} onClick={()=>void shareApproxLocation()} style={{marginTop:10,padding:"10px 14px",borderRadius:12,border:"1px solid #d80621",background:"white",color:"#d80621"}}>{locating?"Getting location…":hasLocation?"Update approximate location":"Share approximate location"}</button><p style={{fontSize:12,color:"#76646d"}}>Optional. Your coordinates are rounded to roughly 1 km and kept private. Distance results require both members to share a location; Anywhere in Canada does not.</p>
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
      </div>}
