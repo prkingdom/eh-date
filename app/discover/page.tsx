@@ -123,7 +123,7 @@ export default function Discover(){
       <button type="button" disabled={locating} onClick={()=>void shareApproxLocation()} style={{marginTop:10,padding:"10px 14px",borderRadius:12,border:"1px solid #d80621",background:"white",color:"#d80621"}}>{locating?"Getting location…":hasLocation?"Update approximate location":"Share approximate location"}</button><p style={{fontSize:12,color:"#76646d"}}>Optional. Your coordinates are rounded to roughly 1 km and kept private. Distance results require both members to share a location; Anywhere in Canada does not.</p>
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
-     </div>}
+     </div>
 </section>}
           {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
 
