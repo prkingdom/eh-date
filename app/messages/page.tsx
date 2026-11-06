@@ -10,7 +10,7 @@ type Message={id:number;user_a:string;user_b:string;sender_id:string;body:string
 function MessagesContent(){
  const params=useSearchParams(),requested=params.get("with");
  const [userId,setUserId]=useState(""),[matches,setMatches]=useState<Match[]>([]),[selected,setSelected]=useState("");
- const [messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
+ const [mobileChat,setMobileChat]=useState(Boolean(requested)),[messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const bottom=useRef<HTMLDivElement>(null),active=useRef("");
  const current=matches.find(m=>m.user_id===selected);
  const fetchMessages=useCallback(async(me:string,other:string)=>{
@@ -30,7 +30,7 @@ function MessagesContent(){
   const {data,error:matchError}=await supabase.rpc("my_match_profiles");
   if(!live)return;
   if(matchError)setError("Couldn't load matches: "+matchError.message);
-  else {const list=(data??[]) as Match[];setMatches(list);setSelected(list.find(m=>m.user_id===requested)?.user_id||list[0]?.user_id||"");}
+  else {const list=(data??[]) as Match[];setMatches(list);setSelected(list.find(m=>m.user_id===requested)?.user_id||list[0]?.user_id||"");setMobileChat(Boolean(list.find(m=>m.user_id===requested)));}
   setLoading(false);
  }void init();return()=>{live=false};},[requested]);
  useEffect(()=>{active.current=selected;setMessages([]);setError("");
@@ -56,20 +56,35 @@ function MessagesContent(){
   else{setDraft("");await fetchMessages(userId,selected);}
   setSending(false);
  }
- return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#30252b",paddingBottom:85}}>
+ return <main className={mobileChat?"eh-chat-open":"eh-chat-inbox"} style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#30252b",paddingBottom:85}}>
+  <style>{`@media(max-width:650px){
+.eh-chat-open .eh-chat-heading,.eh-chat-open .eh-chat-intro{display:none}
+.eh-chat-layout{display:flex!important;flex-direction:column;min-height:0!important;border-radius:18px!important}
+.eh-chat-inbox .eh-chat-panel{display:none!important}
+.eh-chat-open .eh-chat-sidebar{display:none!important}
+.eh-chat-inbox .eh-chat-sidebar{width:100%;min-height:55vh;border-right:0!important}
+.eh-chat-sidebar button{font-size:17px!important;padding:19px 16px!important;border-bottom:1px solid #f6e8ec!important}
+.eh-chat-open .eh-chat-panel{display:flex!important;min-height:calc(100dvh - 235px)}
+.eh-chat-open .eh-chat-section{margin:10px auto!important}
+.eh-chat-open .eh-chat-messages{min-height:0!important;max-height:none!important;flex:1}
+.eh-chat-open .eh-chat-header{padding:14px!important}
+.eh-chat-open .eh-chat-form{padding:10px!important}
+.eh-chat-back{display:inline-flex!important}
+.eh-chat-open .eh-chat-panel{height:calc(100dvh - 225px);min-height:350px}
+}`}</style>
   <SiteNav/>
-  <section style={{maxWidth:1050,margin:"30px auto",padding:"0 16px"}}>
-   <h1 style={{fontSize:34,margin:"0 0 8px"}}>Messages <span style={{color:"#d80621"}}>♥</span></h1>
-   <p style={{color:"#76646d",marginBottom:22}}>Say hello to someone you've matched with.</p>
+  <section className="eh-chat-section" style={{maxWidth:1050,margin:"30px auto",padding:"0 16px"}}>
+   <h1 className="eh-chat-heading" style={{fontSize:34,margin:"0 0 8px"}}>Messages <span style={{color:"#d80621"}}>♥</span></h1>
+   <p className="eh-chat-intro" style={{color:"#76646d",marginBottom:22}}>Say hello to someone you've matched with.</p>
    {loading?<p>Loading conversations…</p>:!userId?<p><a href="/account">Sign in</a> to message your matches.</p>:matches.length===0?<div style={{background:"white",borderRadius:20,padding:28}}><h2>No conversations yet</h2><p>When you and someone both choose YEH, you can chat here for free.</p><a href="/discover" style={{color:"#d80621",fontWeight:800}}>Discover members</a></div>:
-   <div style={{display:"grid",gridTemplateColumns:"minmax(145px,260px) minmax(0,1fr)",background:"white",borderRadius:22,overflow:"hidden",minHeight:520,boxShadow:"0 10px 35px #4a15210d"}}>
-    <aside aria-label="Conversations" style={{borderRight:"1px solid #f0e1e5",padding:"16px 8px"}}>
+   <div className="eh-chat-layout" style={{display:"grid",gridTemplateColumns:"minmax(145px,260px) minmax(0,1fr)",background:"white",borderRadius:22,overflow:"hidden",minHeight:520,boxShadow:"0 10px 35px #4a15210d"}}>
+    <aside className="eh-chat-sidebar" aria-label="Conversations" style={{borderRight:"1px solid #f0e1e5",padding:"16px 8px"}}>
      <h2 style={{fontSize:17,margin:"4px 12px 14px"}}>Your matches</h2>
-     {matches.map(m=><button key={m.user_id} onClick={()=>setSelected(m.user_id)} style={{display:"block",width:"100%",textAlign:"left",padding:"14px 10px",marginBottom:5,border:0,borderRadius:12,background:selected===m.user_id?"#ffe7eb":"transparent",color:selected===m.user_id?"#b31836":"#4d4147",fontSize:15,fontWeight:selected===m.user_id?800:600,cursor:"pointer",overflowWrap:"anywhere"}}>♥ {m.display_name}</button>)}
+     {matches.map(m=><button key={m.user_id} onClick={()=>{setSelected(m.user_id);setMobileChat(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"14px 10px",marginBottom:5,border:0,borderRadius:12,background:selected===m.user_id?"#ffe7eb":"transparent",color:selected===m.user_id?"#b31836":"#4d4147",fontSize:15,fontWeight:selected===m.user_id?800:600,cursor:"pointer",overflowWrap:"anywhere"}}>♥ {m.display_name}</button>)}
     </aside>
-    <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
-     <div style={{padding:"18px 20px",borderBottom:"1px solid #f0e1e5",fontWeight:800,fontSize:19}}>{current?.display_name||"Select a match"} <span style={{fontSize:12,color:"#a66575",fontWeight:500}}>♥ Matched</span></div>
-     <div aria-label="Chat messages" style={{flex:1,minHeight:340,maxHeight:"min(65vh,600px)",overflowY:"auto",padding:"20px 14px",display:"flex",flexDirection:"column",gap:12}}>
+    <div className="eh-chat-panel" style={{display:"flex",flexDirection:"column",minWidth:0}}>
+     <div className="eh-chat-header" style={{padding:"18px 20px",borderBottom:"1px solid #f0e1e5",fontWeight:800,fontSize:19}}><button className="eh-chat-back" type="button" aria-label="Back to conversations" onClick={()=>setMobileChat(false)} style={{display:"none",alignItems:"center",justifyContent:"center",border:0,background:"#fff0f2",color:"#d80621",borderRadius:30,padding:"8px 13px",marginRight:12,fontWeight:800,cursor:"pointer"}}>← Back</button>{current?.display_name||"Select a match"} <span style={{fontSize:12,color:"#a66575",fontWeight:500}}>♥ Matched</span></div>
+     <div className="eh-chat-messages" aria-label="Chat messages" style={{flex:1,minHeight:340,maxHeight:"min(65vh,600px)",overflowY:"auto",padding:"20px 14px",display:"flex",flexDirection:"column",gap:12}}>
       {messages.length===0&&<p style={{textAlign:"center",color:"#897981",marginTop:75}}>It's a match! Say hello to {current?.display_name} ♥</p>}
       {messages.map(m=><div key={m.id} style={{alignSelf:m.sender_id===userId?"flex-end":"flex-start",maxWidth:"85%"}}>
        <div style={{background:m.sender_id===userId?"#d80621":"#f4edef",color:m.sender_id===userId?"white":"#30252b",padding:"11px 15px",borderRadius:17,overflowWrap:"anywhere",whiteSpace:"pre-wrap",lineHeight:1.5}}>{m.body}</div>
@@ -77,7 +92,7 @@ function MessagesContent(){
       </div>)}
       <div ref={bottom}/>
      </div>
-     <form onSubmit={e=>{e.preventDefault();void send();}} style={{display:"flex",gap:9,padding:14,borderTop:"1px solid #f0e1e5"}}>
+     <form className="eh-chat-form" onSubmit={e=>{e.preventDefault();void send();}} style={{display:"flex",gap:9,padding:14,borderTop:"1px solid #f0e1e5"}}>
       <input aria-label="Write a message" value={draft} onChange={e=>setDraft(e.target.value)} maxLength={2000} placeholder="Write a message…" style={{flex:1,minWidth:0,border:"1px solid #e8d5dc",borderRadius:25,padding:"13px 15px",fontSize:16}}/>
       <button type="submit" disabled={sending||!draft.trim()} style={{background:"#d80621",color:"white",border:0,borderRadius:25,padding:"12px 17px",fontWeight:800,cursor:"pointer",opacity:(sending||!draft.trim())?0.6:1}}>{sending?"…":"Send"}</button>
      </form>
