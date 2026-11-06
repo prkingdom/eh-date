@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
 import SiteNav from "../components/SiteNav";
 import SafetyActions from "../components/SafetyActions";
@@ -14,6 +14,8 @@ export default function Discover(){
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
+ const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[matchName,setMatchName]=useState("");
+ const touchStart=useRef<{x:number;y:number}|null>(null);
  async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_with_preferences",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
@@ -75,8 +77,9 @@ export default function Discover(){
      </div>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
-    <section>
-     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316"}}>
+    <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(Math.max(-180,Math.min(180,dx)));}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragX(0);setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");}}>
+     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:dragging?`translateX(${dragX}px) rotate(${dragX/35}deg)`:"none",transition:dragging?"none":"transform .2s ease",touchAction:"pan-y"}}>
+      {dragging&&<div style={{textAlign:"center",fontWeight:900,paddingTop:10,color:dragX>0?"#15803d":"#a52640"}}>{dragX>0?"♥ YEH":"✕ NEH"}</div>}
       <div style={{display:"flex",gap:12,justifyContent:"center",padding:"18px 20px"}}>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
@@ -109,5 +112,6 @@ export default function Discover(){
     </section>
    </div>
   </div>
+  {matchName&&<div role="dialog" aria-modal="true" aria-label="New match" style={{position:"fixed",inset:0,zIndex:200,background:"#310b20c9",display:"grid",placeItems:"center",padding:20}}><div style={{background:"white",borderRadius:28,padding:"38px 24px",maxWidth:420,width:"100%",textAlign:"center",boxShadow:"0 20px 80px #0005"}}><div style={{fontSize:64,color:"#d80621"}}>♥</div><h2 style={{fontSize:34,color:"#d80621",margin:"10px 0"}}>It’s a Match!</h2><p style={{lineHeight:1.6}}>You and {matchName} both said YEH! ♥</p><a href="/matches" style={{display:"block",background:"#d80621",color:"white",padding:14,borderRadius:30,fontWeight:800,marginTop:20}}>See your match</a><button type="button" onClick={()=>setMatchName("")} style={{border:0,background:"transparent",padding:15,color:"#9b2440",cursor:"pointer"}}>Keep discovering</button></div></div>}
  </main>;
 }
