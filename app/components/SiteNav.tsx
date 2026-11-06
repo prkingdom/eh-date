@@ -4,7 +4,7 @@ import {usePathname} from "next/navigation";
 import {createClient} from "@supabase/supabase-js";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
-const links=[["/discover","Discover","♡"],["/likes","Likes","♥"],["/matches","Matches","✦"],["/profile","Profile","◉"]];
+const links=[["/discover","Discover","♡"],["/likes","Likes","♥"],["/matches","Matches","✦"],["/messages","Chat","✉"],["/profile","Profile","◉"]];
 export default function SiteNav(){
  const path=usePathname();
  const [likes,setLikes]=useState<number|null>(null);
