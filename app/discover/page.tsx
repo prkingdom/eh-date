@@ -14,8 +14,9 @@ export default function Discover(){
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
- const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[matchName,setMatchName]=useState("");
+ const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[flying,setFlying]=useState(false),[matchName,setMatchName]=useState("");
  const touchStart=useRef<{x:number;y:number}|null>(null);
+ const swipeLock=useRef(false);
  async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_with_preferences",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
@@ -42,7 +43,10 @@ export default function Discover(){
   setBusy(false);
  }
  async function swipe(target:string,decision:"YEH"|"NEH"){
-  if(!supabase||!userId)return;setBusy(true);setMessage("");
+  if(!supabase||!userId||swipeLock.current)return;
+  swipeLock.current=true;setBusy(true);setMessage("");
+  setDragging(false);setFlying(true);setDragX(decision==="YEH"?window.innerWidth+260:-(window.innerWidth+260));
+  await new Promise(resolve=>setTimeout(resolve,320));
   const {data:isMatch,error}=await supabase.rpc("submit_swipe",{p_target_id:target,p_decision:decision});
   if(error)setMessage("Could not record your choice: "+error.message);
   else{
@@ -52,7 +56,7 @@ export default function Discover(){
    }else setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");
    setMembers(m=>m.filter(p=>p.user_id!==target));
   }
-  setBusy(false);
+  setFlying(false);setDragX(0);setBusy(false);swipeLock.current=false;
  }
  const member=members[0];
  useEffect(()=>{let active=true;setPhotoUrls([]);setPhotoIndex(0);
@@ -83,9 +87,11 @@ export default function Discover(){
      </div>}
      {message&&<p role="status" style={{color:"#a60020",lineHeight:1.5}}>{message}</p>}
     </section>
-    <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(Math.max(-180,Math.min(180,dx)));}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragX(0);setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");}}>
-     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:dragging?`translateX(${dragX}px) rotate(${dragX/35}deg)`:"none",transition:dragging?"none":"transform .2s ease",touchAction:"pan-y"}}>
-      {dragging&&<div style={{textAlign:"center",fontWeight:900,paddingTop:10,color:dragX>0?"#15803d":"#a52640"}}>{dragX>0?"♥ YEH":"✕ NEH"}</div>}
+    <section onTouchStart={e=>{if(busy||!member||e.touches.length!==1)return;touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchMove={e=>{if(!touchStart.current||busy||!member)return;const dx=e.touches[0].clientX-touchStart.current.x;const dy=e.touches[0].clientY-touchStart.current.y;if(Math.abs(dy)>Math.abs(dx)*1.2){setDragging(false);setDragX(0);return;}if(Math.abs(dx)>15){setDragging(true);setDragX(Math.max(-180,Math.min(180,dx)));}}} onTouchEnd={()=>{const dx=dragX;touchStart.current=null;setDragging(false);if(Math.abs(dx)>95&&member&&!busy)void swipe(member.user_id,dx>0?"YEH":"NEH");else setDragX(0);}}>
+     {!userId?<div style={{background:"white",borderRadius:22,padding:30}}>Sign in to discover members.</div>:!visible?<div style={{background:"white",borderRadius:22,padding:30}}><h2>Discovery is off</h2><p>Make your profile public in My Profile → Privacy settings to see other members.</p></div>:member?<div style={{position:"relative",isolation:"isolate"}}>
+     {members[1]&&<div aria-hidden="true" style={{position:"absolute",inset:"10px 12px 0",background:"white",borderRadius:24,boxShadow:"0 8px 30px #70132314",transform:flying?"scale(1)":"scale(.97)",transition:"transform .32s ease",padding:24,overflow:"hidden",zIndex:0}}><div style={{height:60,background:"#fff1f3",borderRadius:30}}/><div style={{height:"min(65vh,560px)",minHeight:340,background:"linear-gradient(145deg,#ffb4b9,#d80621)",display:"grid",placeItems:"center",marginTop:16,borderRadius:12,color:"white",fontSize:70}}>♥</div><h2>{members[1].display_name}, {members[1].age}</h2></div>}
+     <div style={{position:"relative",zIndex:1,background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:`translateX(${dragX}px) rotate(${Math.max(-16,Math.min(16,dragX/35))}deg)`,opacity:flying?0.7:1,transition:dragging?"none":flying?"transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease":"transform .3s cubic-bezier(.2,.8,.2,1)",touchAction:"pan-y",willChange:"transform"}}>
+      {(dragging||flying)&&<div style={{textAlign:"center",fontWeight:900,paddingTop:10,color:dragX>0?"#15803d":"#a52640"}}>{dragX>0?"♥ YEH":"✕ NEH"}</div>}
       <div style={{display:"flex",gap:12,justifyContent:"center",padding:"18px 20px"}}>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"NEH")} style={{padding:"15px 25px",borderRadius:30,border:"2px solid #d80621",background:"white",color:"#d80621",fontWeight:800,cursor:"pointer"}}>✕ NEH</button>
        <button disabled={busy} onClick={()=>void swipe(member.user_id,"YEH")} style={{padding:"15px 25px",borderRadius:30,border:0,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>♥ YEH</button>
@@ -110,7 +116,7 @@ export default function Discover(){
        <SafetyActions key={member.user_id} targetId={member.user_id} onBlocked={()=>{setMembers(current=>current.filter(m=>m.user_id!==member.user_id));setMessage("Member blocked.");}}/>
       </div>
 
-     </div>:<div style={{background:"white",borderRadius:22,padding:30,textAlign:"center"}}>
+     </div></div>:<div style={{background:"white",borderRadius:22,padding:30,textAlign:"center"}}>
       <div style={{fontSize:52,color:"#d80621"}}>♥</div><h2>No profiles to show yet</h2>
       <p style={{lineHeight:1.6,color:"#72676d"}}>When other Canadians opt in and match your preferences, their profiles will appear here.</p>
       <button onClick={()=>void refresh()} style={{border:0,background:"#d80621",color:"white",padding:"13px 22px",borderRadius:30,cursor:"pointer"}}>Refresh profiles</button>
