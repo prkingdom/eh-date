@@ -149,12 +149,12 @@ export default function Discover(){
        </div>}</>:<span aria-label="No profile photo">♥</span>}
       </div>
       <div style={{padding:24}}>
-       <p style={{lineHeight:1.6,whiteSpace:"pre-wrap",}}>{member.bio||"Say hello!"}</p>
        {member.relationship_goal&&<p style={{fontWeight:800,color:"#a52640",margin:"14px 0"}}>♥ {member.relationship_goal}</p>}
        {member.sexual_orientation&&<p style={{color:"#a52640"}}>Orientation: {member.sexual_orientation}</p>}
        {!!member.interested_in?.length&&<p style={{color:"#a52640"}}>Interested in: {member.interested_in.map(v=>v==="Man"?"Men":v==="Woman"?"Women":"Non-binary people").join(", ")}</p>}
        {!!member.interests?.length&&<div style={{display:"flex",flexWrap:"wrap",gap:8,margin:"14px 0"}}>{member.interests.map(interest=><span key={interest} style={{padding:"8px 12px",borderRadius:22,background:"#fff0f2",color:"#8e2338",fontWeight:700,fontSize:13}}>{interest}</span>)}</div>}
        {!!member.personality_prompts?.length&&<div style={{display:"grid",gap:10,margin:"18px 0"}}>{member.personality_prompts.filter(p=>p.question&&p.answer).map((p,i)=><div key={i} style={{background:"#fff5f5",borderRadius:14,padding:15}}><strong style={{color:"#a52640"}}>{p.question}</strong><p style={{lineHeight:1.6,margin:"8px 0 0",whiteSpace:"pre-wrap"}}>{p.answer}</p></div>)}</div>}
+       {member.bio&&<div style={{margin:"18px 0"}}><strong style={{color:"#a52640"}}>About me</strong><p style={{lineHeight:1.6,whiteSpace:"pre-wrap",margin:"8px 0 0"}}>{member.bio}</p></div>}
        <SafetyActions key={member.user_id} targetId={member.user_id} onBlocked={()=>{setMembers(current=>current.filter(m=>m.user_id!==member.user_id));setMessage("Member blocked.");}}/>
       </div>
 
