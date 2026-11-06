@@ -11,13 +11,13 @@ export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[visible,setVisible]=useState(false);
  const [radius,setRadius]=useState<number|null>(null),[hasLocation,setHasLocation]=useState(false),[locating,setLocating]=useState(false);
- const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
+ const [approvedIds,setApprovedIds]=useState<string[]>([]);\n const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
  const [lastNeh,setLastNeh]=useState(""),[undoBusy,setUndoBusy]=useState(false);
  const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[flying,setFlying]=useState(false),[matchName,setMatchName]=useState("");
  const touchStart=useRef<{x:number;y:number}|null>(null);
  const swipeLock=useRef(false);
- async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_nearby",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
+ async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_nearby",{max_results:20});if(error)setMessage(error.message);else {setMembers(data??[]);const ids=(data??[]).map((m:Member)=>m.user_id);if(ids.length){const {data:verified}=await supabase.rpc("approved_photo_review_ids",{member_ids:ids});setApprovedIds((verified??[]).map((v:{user_id:string})=>v.user_id));}else setApprovedIds([]);}}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
   const {data:{user}}=await supabase.auth.getUser();
@@ -134,7 +134,7 @@ export default function Discover(){
      <div style={{position:"relative",zIndex:1,background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:`translateX(${dragX}px) rotate(${Math.max(-16,Math.min(16,dragX/35))}deg)`,opacity:flying?0.7:1,transition:dragging?"none":flying?"transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease":"transform .3s cubic-bezier(.2,.8,.2,1)",touchAction:"pan-y",willChange:"transform"}}>
       {(dragging||flying)&&<div style={{textAlign:"center",fontWeight:900,paddingTop:10,color:dragX>0?"#15803d":"#a52640"}}>{dragX>0?"♥ YEH":"✕ NEH"}</div>}
       <div style={{padding:"17px 20px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,minWidth:0,background:"#fff"}}>
-        <h2 style={{margin:0,fontSize:"clamp(25px,5.4vw,32px)",letterSpacing:"-0.8px",lineHeight:1.12,fontWeight:850,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textTransform:"capitalize"}}>{member.display_name}, {member.age}</h2>
+        <h2 style={{margin:0,fontSize:"clamp(25px,5.4vw,32px)",letterSpacing:"-0.8px",lineHeight:1.12,fontWeight:850,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textTransform:"capitalize"}}>{member.display_name}, {member.age}{approvedIds.includes(member.user_id)&&<span title="Profile photos reviewed" aria-label="Profile photos reviewed" style={{color:"#1687e8",fontSize:22,marginLeft:7}}>●✓</span>}</h2>
         <span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:13,fontWeight:650,lineHeight:1.3,color:"#8b5260",minWidth:0,maxWidth:"46%",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flexShrink:1}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</span>
        </div>
       <div className="eh-desktop-swipe-actions" style={{display:"flex",gap:12,justifyContent:"center",padding:"12px 20px 16px"}}>
