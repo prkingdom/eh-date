@@ -34,6 +34,7 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
    <p style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
    <p style={{lineHeight:1.6,color:"#655d63"}}>{match.bio||"A new connection on ehdate."}</p>
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
+   <a href={"/messages?with="+encodeURIComponent(match.user_id)} style={{display:"inline-block",marginTop:12,marginRight:10,padding:"11px 18px",borderRadius:24,background:"#d80621",color:"white",fontWeight:800,textDecoration:"none"}}>♥ Message</a>
    <button type="button" disabled={busy} onClick={()=>onUnmatch(match.user_id)} style={{marginTop:12,padding:"9px 14px",border:"1px solid #e6c4cc",borderRadius:12,background:"white",color:"#a72b43",fontWeight:700,cursor:busy?"wait":"pointer"}}>{busy?"Please wait…":"Unmatch"}</button>
    <SafetyActions targetId={match.user_id} onBlocked={()=>onBlocked(match.user_id)}/>
    <p style={{fontSize:13,color:"#82747b",marginTop:16}}>Matched {new Date(match.matched_at).toLocaleDateString("en-CA",{year:"numeric",month:"short",day:"numeric"})}</p>
