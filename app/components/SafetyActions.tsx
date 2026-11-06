@@ -5,10 +5,10 @@ import {createClient} from "@supabase/supabase-js";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
-const reasons=["Harassment or bullying","Fake profile or impersonation","Inappropriate photos or content","Spam or scam","Underage member","Other"];
+const reasons=[{value:"harassment",label:"Harassment or bullying"},{value:"fake_profile",label:"Fake profile or impersonation"},{value:"inappropriate_content",label:"Inappropriate photos or content"},{value:"other",label:"Spam or scam"},{value:"underage",label:"Underage member"},{value:"other",label:"Other"}];
 export default function SafetyActions({targetId,onBlocked}:{targetId:string;onBlocked:()=>void}){
  const [open,setOpen]=useState(false);
- const [reason,setReason]=useState(reasons[0]);
+ const [reason,setReason]=useState(reasons[0].value);
  const [details,setDetails]=useState("");
  const [busy,setBusy]=useState(false);
  const [status,setStatus]=useState("");
@@ -41,7 +41,7 @@ export default function SafetyActions({targetId,onBlocked}:{targetId:string;onBl
   {open&&<div style={{marginTop:14,padding:18,borderRadius:16,background:"#fff3f5",border:"1px solid #f0d5dc"}}>
    <h3 style={{margin:"0 0 12px",fontSize:18}}>Report this member</h3>
    <label style={{display:"block",fontWeight:700}}>Reason
-    <select value={reason} onChange={e=>setReason(e.target.value)} style={{display:"block",width:"100%",padding:11,borderRadius:10,border:"1px solid #d9bfc6",marginTop:6,background:"white"}}>{reasons.map(r=><option key={r} value={r}>{r}</option>)}</select>
+    <select value={reason} onChange={e=>setReason(e.target.value)} style={{display:"block",width:"100%",padding:11,borderRadius:10,border:"1px solid #d9bfc6",marginTop:6,background:"white"}}>{reasons.map((r,i)=><option key={i} value={r.value}>{r.label}</option>)}</select>
    </label>
    <label style={{display:"block",fontWeight:700,marginTop:12}}>Details (optional)
     <textarea value={details} maxLength={1000} onChange={e=>setDetails(e.target.value)} rows={3} placeholder="Tell us what happened…" style={{display:"block",width:"100%",boxSizing:"border-box",padding:11,borderRadius:10,border:"1px solid #d9bfc6",marginTop:6,fontFamily:"inherit"}}/>
