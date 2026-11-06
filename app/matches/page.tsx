@@ -51,7 +51,7 @@ export default function MatchesPage(){
  return <main style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#292126"}}>
   <header style={{background:"#d80621",padding:"20px max(20px,6vw)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
    <a href="/" style={{fontWeight:800,fontSize:28,color:"white",textDecoration:"none"}}>♥ ehdate.</a>
-   <a href="/discover" style={{color:"white",fontWeight:700,textDecoration:"none"}}>Discover</a>
+   <nav style={{display:"flex",gap:16,flexWrap:"wrap"}}><a href="/discover" style={{color:"white",fontWeight:700}}>Discover</a><a href="/likes" style={{color:"white",fontWeight:700}}>Likes ♥</a><a href="/profile" style={{color:"white",fontWeight:700}}>My profile</a></nav>
   </header>
   <section style={{maxWidth:1000,margin:"45px auto",padding:"0 20px"}}>
    <h1 style={{fontSize:38,marginBottom:8}}>Your matches ♥</h1>
