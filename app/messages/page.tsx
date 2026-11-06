@@ -3,6 +3,7 @@ import {Suspense,useCallback,useEffect,useRef,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
 import {useSearchParams} from "next/navigation";
 import SiteNav from "../components/SiteNav";
+import SafetyActions from "../components/SafetyActions";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
 type Match={user_id:string;display_name:string;age:number;city:string|null;matched_at:string;photos_shared:boolean};
@@ -27,6 +28,7 @@ function MessagesContent(){
  const [userId,setUserId]=useState(""),[matches,setMatches]=useState<Match[]>([]),[selected,setSelected]=useState("");
  const [summaries,setSummaries]=useState<Summary[]>([]);
  const [mobileChat,setMobileChat]=useState(Boolean(requested)),[messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
+ const [reportingMessage,setReportingMessage]=useState<number|null>(null),[reportReason,setReportReason]=useState("Harassment or bullying"),[reportDetails,setReportDetails]=useState(""),[reportBusy,setReportBusy]=useState(false),[reportStatus,setReportStatus]=useState("");
  const bottom=useRef<HTMLDivElement>(null),active=useRef("");
  const current=matches.find(m=>m.user_id===selected);
  const sortedMatches=[...matches].sort((a,b)=>{const x=summaries.find(s=>s.other_user_id===a.user_id)?.last_message_at||a.matched_at;const y=summaries.find(s=>s.other_user_id===b.user_id)?.last_message_at||b.matched_at;return new Date(y).getTime()-new Date(x).getTime();});
@@ -71,6 +73,14 @@ function MessagesContent(){
  },[selected,userId,fetchMessages,refreshSummaries]);
  useEffect(()=>{if(!userId||!selected)return;if(mobileChat||window.matchMedia("(min-width:651px)").matches)void markRead(userId,selected);},[userId,selected,mobileChat,messages.length,markRead]);
  useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth",block:"end"});},[messages.length,selected]);
+ async function reportMessage(){
+  if(!supabase||!userId||!selected||reportingMessage===null||reportBusy)return;
+  setReportBusy(true);setReportStatus("");
+  const {error:reportError}=await supabase.from("message_reports").insert({reporter_id:userId,reported_id:selected,message_id:reportingMessage,reason:reportReason,details:reportDetails.trim()||null});
+  if(reportError)setReportStatus("Could not submit report: "+reportError.message);
+  else{setReportStatus("Message reported privately. Thank you.");setReportingMessage(null);setReportDetails("");}
+  setReportBusy(false);
+ }
  async function send(){
   if(!supabase||!userId||!selected||sending)return;
   const body=draft.trim();if(!body||body.length>2000)return;
@@ -108,15 +118,22 @@ function MessagesContent(){
      {sortedMatches.map(m=><button key={m.user_id} onClick={()=>{setSelected(m.user_id);setMobileChat(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"14px 10px",marginBottom:5,border:0,borderRadius:12,background:selected===m.user_id?"#ffe7eb":"transparent",color:selected===m.user_id?"#b31836":"#4d4147",fontSize:15,fontWeight:selected===m.user_id?800:600,cursor:"pointer",overflowWrap:"anywhere"}}><span style={{display:"flex",alignItems:"center",gap:12}}><MatchAvatar match={m} size={48}/><span style={{flex:1,minWidth:0}}><span style={{display:"flex",justifyContent:"space-between",gap:6,alignItems:"center"}}><strong>{m.display_name}</strong>{Boolean(summaries.find(s=>s.other_user_id===m.user_id)?.unread_count)&&<span style={{background:"#d80621",color:"white",borderRadius:30,fontSize:12,padding:"3px 8px"}}>{summaries.find(s=>s.other_user_id===m.user_id)?.unread_count}</span>}</span><span style={{display:"block",fontSize:12,color:"#897981",fontWeight:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{(()=>{const s=summaries.find(s=>s.other_user_id===m.user_id);return s?.last_body?(s.last_sender_id===userId?"You: ":"")+s.last_body:"Say hello ♥";})()}</span><span style={{fontSize:11,color:"#a08d95",fontWeight:400}}>{(()=>{const s=summaries.find(s=>s.other_user_id===m.user_id);return s?.last_message_at?new Date(s.last_message_at).toLocaleDateString("en-CA",{month:"short",day:"numeric"}):"";})()}</span></span></span></button>)}
     </aside>
     <div className="eh-chat-panel" style={{display:"flex",flexDirection:"column",minWidth:0}}>
-     <div className="eh-chat-header" style={{padding:"18px 20px",borderBottom:"1px solid #f0e1e5",fontWeight:800,fontSize:19}}><button className="eh-chat-back" type="button" aria-label="Back to conversations" onClick={()=>setMobileChat(false)} style={{display:"none",alignItems:"center",justifyContent:"center",border:0,background:"#fff0f2",color:"#d80621",borderRadius:30,padding:"8px 13px",marginRight:12,fontWeight:800,cursor:"pointer"}}>← Back</button><span style={{display:"inline-flex",alignItems:"center",gap:10,verticalAlign:"middle"}}>{current&&<MatchAvatar match={current} size={42}/>}<span>{current?.display_name||"Select a match"} <span style={{fontSize:12,color:"#a66575",fontWeight:500}}>♥ Matched</span></span></span></div>
+     <div className="eh-chat-header" style={{padding:"18px 20px",borderBottom:"1px solid #f0e1e5",fontWeight:800,fontSize:19}}><button className="eh-chat-back" type="button" aria-label="Back to conversations" onClick={()=>setMobileChat(false)} style={{display:"none",alignItems:"center",justifyContent:"center",border:0,background:"#fff0f2",color:"#d80621",borderRadius:30,padding:"8px 13px",marginRight:12,fontWeight:800,cursor:"pointer"}}>← Back</button><span style={{display:"inline-flex",alignItems:"center",gap:10,verticalAlign:"middle"}}>{current&&<MatchAvatar match={current} size={42}/>}<span>{current?.display_name||"Select a match"} <span style={{fontSize:12,color:"#a66575",fontWeight:500}}>♥ Matched</span></span></span>{current&&<details style={{fontSize:12,fontWeight:400,marginTop:8}}><summary style={{cursor:"pointer",color:"#a72b43"}}>Safety · Report or block member</summary><SafetyActions targetId={current.user_id} onBlocked={()=>{setMatches(prev=>prev.filter(m=>m.user_id!==current.user_id));setSelected("");setMobileChat(false);setMessages([]);}}/></details>}</div>
      <div className="eh-chat-messages" aria-label="Chat messages" style={{flex:1,minHeight:340,maxHeight:"min(65vh,600px)",overflowY:"auto",padding:"20px 14px",display:"flex",flexDirection:"column",gap:12}}>
       {messages.length===0&&<p style={{textAlign:"center",color:"#897981",marginTop:75}}>It's a match! Say hello to {current?.display_name} ♥</p>}
       {messages.map(m=><div key={m.id} style={{alignSelf:m.sender_id===userId?"flex-end":"flex-start",maxWidth:"85%"}}>
        <div style={{background:m.sender_id===userId?"#d80621":"#f4edef",color:m.sender_id===userId?"white":"#30252b",padding:"11px 15px",borderRadius:17,overflowWrap:"anywhere",whiteSpace:"pre-wrap",lineHeight:1.5}}>{m.body}</div>
-       <div style={{fontSize:11,color:"#96858d",marginTop:4,textAlign:m.sender_id===userId?"right":"left"}}>{new Date(m.created_at).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"})}</div>
+       <div style={{fontSize:11,color:"#96858d",marginTop:4,textAlign:m.sender_id===userId?"right":"left"}}>{new Date(m.created_at).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"})}{m.sender_id!==userId&&<button type="button" onClick={()=>{setReportingMessage(m.id);setReportStatus("");}} style={{border:0,background:"transparent",color:"#a72b43",marginLeft:10,textDecoration:"underline",cursor:"pointer",fontSize:11}}>Report message</button>}</div>
       </div>)}
       <div ref={bottom}/>
      </div>
+     {reportingMessage!==null&&<div style={{padding:14,background:"#fff1f3",borderTop:"1px solid #f0d5dc"}}>
+      <strong>Report this message</strong>
+      <select aria-label="Report reason" value={reportReason} onChange={e=>setReportReason(e.target.value)} style={{display:"block",width:"100%",padding:10,marginTop:8,borderRadius:10,border:"1px solid #e6c4cc"}}>{["Harassment or bullying","Threats or violence","Sexual harassment","Hate speech","Spam or scam","Other"].map(r=><option key={r}>{r}</option>)}</select>
+      <textarea aria-label="Report details" placeholder="Additional details (optional)" maxLength={1000} value={reportDetails} onChange={e=>setReportDetails(e.target.value)} style={{width:"100%",boxSizing:"border-box",marginTop:8,padding:10,borderRadius:10,border:"1px solid #e6c4cc"}}/>
+      <div style={{display:"flex",gap:12,marginTop:8}}><button type="button" disabled={reportBusy} onClick={()=>void reportMessage()} style={{background:"#d80621",color:"white",border:0,borderRadius:20,padding:"9px 14px",fontWeight:700}}>{reportBusy?"Submitting…":"Submit report"}</button><button type="button" onClick={()=>setReportingMessage(null)} style={{border:0,background:"transparent"}}>Cancel</button></div>
+     </div>}
+     {reportStatus&&<p role="status" style={{padding:"0 14px",color:"#9b1c39"}}>{reportStatus}</p>}
      <form className="eh-chat-form" onSubmit={e=>{e.preventDefault();void send();}} style={{display:"flex",gap:9,padding:14,borderTop:"1px solid #f0e1e5"}}>
       <input aria-label="Write a message" value={draft} onChange={e=>setDraft(e.target.value)} maxLength={2000} placeholder="Write a message…" style={{flex:1,minWidth:0,border:"1px solid #e8d5dc",borderRadius:25,padding:"13px 15px",fontSize:16}}/>
       <button type="submit" disabled={sending||!draft.trim()} style={{background:"#d80621",color:"white",border:0,borderRadius:25,padding:"12px 17px",fontWeight:800,cursor:"pointer",opacity:(sending||!draft.trim())?0.6:1}}>{sending?"…":"Send"}</button>
