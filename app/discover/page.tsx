@@ -12,24 +12,25 @@ const inputStyle={width:"100%",padding:12,border:"1px solid #e7cbd0",borderRadiu
 export default function Discover(){
  const [userId,setUserId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [min,setMin]=useState(18),[max,setMax]=useState(99),[province,setProvince]=useState(""),[visible,setVisible]=useState(false);
+ const [radius,setRadius]=useState<number|null>(null),[hasLocation,setHasLocation]=useState(false),[locating,setLocating]=useState(false);
  const [members,setMembers]=useState<Member[]>([]),[message,setMessage]=useState(""),[hasProfile,setHasProfile]=useState(false);
  const [photoUrls,setPhotoUrls]=useState<string[]>([]),[photoIndex,setPhotoIndex]=useState(0),[settingsOpen,setSettingsOpen]=useState(false);
  const [lastNeh,setLastNeh]=useState(""),[undoBusy,setUndoBusy]=useState(false);
  const [dragX,setDragX]=useState(0),[dragging,setDragging]=useState(false),[flying,setFlying]=useState(false),[matchName,setMatchName]=useState("");
  const touchStart=useRef<{x:number;y:number}|null>(null);
  const swipeLock=useRef(false);
- async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_with_preferences",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
+ async function refresh(){if(!supabase)return;const {data,error}=await supabase.rpc("discover_members_nearby",{max_results:20});if(error)setMessage(error.message);else setMembers(data??[]);}
  useEffect(()=>{async function load(){
   if(!supabase){setMessage("Account connection unavailable.");setLoading(false);return;}
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){setLoading(false);return;}
   setUserId(user.id);
   const [pref,profile]=await Promise.all([
-   supabase.from("discovery_preferences").select("minimum_age,maximum_age,preferred_province,is_discoverable,share_photos").eq("user_id",user.id).maybeSingle(),
+   supabase.from("discovery_preferences").select("minimum_age,maximum_age,preferred_province,is_discoverable,share_photos,radius_km,latitude,longitude").eq("user_id",user.id).maybeSingle(),
    supabase.from("profiles").select("user_id").eq("user_id",user.id).maybeSingle()
   ]);
   setHasProfile(Boolean(profile.data));
-  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setProvince(pref.data.preferred_province??"");setVisible(pref.data.is_discoverable);}
+  if(pref.data){setMin(pref.data.minimum_age);setMax(pref.data.maximum_age);setProvince(pref.data.preferred_province??"");setVisible(pref.data.is_discoverable);setRadius(pref.data.radius_km);setHasLocation(pref.data.latitude!==null&&pref.data.longitude!==null);}
   if(pref.data?.is_discoverable)await refresh();
   setLoading(false);
  }void load();},[]);
@@ -38,10 +39,20 @@ export default function Discover(){
   if(!Number.isInteger(min)||!Number.isInteger(max)||min<18||max>100||min>max){setMessage("Choose a valid age range between 18 and 100.");return;}
 
   setBusy(true);setMessage("");
-  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:province||null,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+  const {error}=await supabase.from("discovery_preferences").upsert({user_id:userId,minimum_age:min,maximum_age:max,preferred_province:province||null,radius_km:radius,updated_at:new Date().toISOString()},{onConflict:"user_id"});
   if(error)setMessage(error.message);
   else{setMessage("Filters saved.");await refresh();setSettingsOpen(false);}
   setBusy(false);
+ }
+ async function shareApproxLocation(){
+  if(!supabase||!userId)return;
+  if(!navigator.geolocation){setMessage("Location is not supported by this browser.");return;}
+  setLocating(true);
+  navigator.geolocation.getCurrentPosition(async position=>{
+   const latitude=Math.round(position.coords.latitude*100)/100,longitude=Math.round(position.coords.longitude*100)/100;
+   const {error}=await supabase!.from("discovery_preferences").update({latitude,longitude,updated_at:new Date().toISOString()}).eq("user_id",userId);
+   setLocating(false);if(error)setMessage("Could not save location: "+error.message);else{setHasLocation(true);setMessage("Approximate location saved (about 1 km precision).");await refresh();}
+  },()=>{setLocating(false);setMessage("Location permission was denied or unavailable.");},{enableHighAccuracy:false,timeout:10000});
  }
  async function swipe(target:string,decision:"YEH"|"NEH"){
   if(!supabase||!userId||swipeLock.current)return;
@@ -92,6 +103,8 @@ export default function Discover(){
        <label>Maximum age<input type="number" min={18} max={100} value={max} onChange={e=>setMax(Number(e.target.value))} style={inputStyle}/></label>
       </div>
       <label style={{display:"block",marginTop:18}}>Province or territory<select value={province} onChange={e=>setProvince(e.target.value)} style={{...inputStyle,marginTop:8}}>{provinces.map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
+      <label style={{display:"block",marginTop:16}}>Distance filter<select value={radius??""} onChange={e=>setRadius(e.target.value?Number(e.target.value):null)} style={{...inputStyle,marginTop:8}}><option value="">Anywhere (province filter applies)</option>{[10,25,50,100,250,500].map(k=><option key={k} value={k}>{k} km</option>)}</select></label>
+      <button type="button" disabled={locating} onClick={()=>void shareApproxLocation()} style={{marginTop:10,padding:"10px 14px",borderRadius:12,border:"1px solid #d80621",background:"white",color:"#d80621"}}>{locating?"Getting location…":hasLocation?"Update approximate location":"Share approximate location"}</button><p style={{fontSize:12,color:"#76646d"}}>Optional. Your coordinates are rounded to roughly 1 km and kept private. Distance results require both members to share a location.</p>
       <button disabled={busy} onClick={()=>void save()} style={{marginTop:20,padding:"14px 24px",border:0,borderRadius:28,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>{busy?"Please wait…":"Save settings"}</button>
      </>}
      </div>}
