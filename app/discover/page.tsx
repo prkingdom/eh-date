@@ -45,7 +45,13 @@ export default function Discover(){
   if(!supabase||!userId)return;setBusy(true);setMessage("");
   const {data:isMatch,error}=await supabase.rpc("submit_swipe",{p_target_id:target,p_decision:decision});
   if(error)setMessage("Could not record your choice: "+error.message);
-  else{setMembers(m=>m.filter(p=>p.user_id!==target));setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");}
+  else{
+   if(decision==="YEH"&&isMatch===true){
+    setMatchName(members.find(m=>m.user_id===target)?.display_name||"your new connection");
+    setMessage("");
+   }else setMessage(decision==="YEH"?"YEH saved! If they YEH you too, you'll match.":"NEH saved.");
+   setMembers(m=>m.filter(p=>p.user_id!==target));
+  }
   setBusy(false);
  }
  const member=members[0];
