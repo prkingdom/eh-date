@@ -60,6 +60,8 @@ export default function MatchesPage(){
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError||!user){setLoading(false);return;}
   setSignedIn(true);
+  await supabase.from("match_notification_seen").upsert({user_id:user.id,seen_at:new Date().toISOString()},{onConflict:"user_id"});
+  window.dispatchEvent(new Event("ehdate-unread-changed"));
   const {data,error:queryError}=await supabase.rpc("my_match_profiles");
   if(queryError)setError(queryError.message);else setMatches(data??[]);
   setLoading(false);
