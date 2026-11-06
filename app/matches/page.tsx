@@ -9,7 +9,9 @@ type Match={user_id:string;display_name:string;age:number;city:string|null;provi
 function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:string)=>void;onBlocked:(id:string)=>void;busy:boolean}){
  const [photos,setPhotos]=useState<string[]>([]);
  const [photoIndex,setPhotoIndex]=useState(0);
- const [photoError,setPhotoError]=useState("");\n const [approved,setApproved]=useState(false);\n useEffect(()=>{if(!supabase)return;void supabase.rpc("approved_photo_review_ids",{member_ids:[match.user_id]}).then(({data})=>setApproved((data??[]).some((v:{user_id:string})=>v.user_id===match.user_id)));},[match.user_id]);
+ const [photoError,setPhotoError]=useState("");
+ const [approved,setApproved]=useState(false);
+ useEffect(()=>{if(!supabase)return;void supabase.rpc("approved_photo_review_ids",{member_ids:[match.user_id]}).then(({data})=>setApproved((data??[]).some((v:{user_id:string})=>v.user_id===match.user_id)));},[match.user_id]);
  useEffect(()=>{let active=true;async function load(){
   if(!supabase||!match.photos_shared)return;
   const {data:files,error}=await supabase.storage.from("profile-photos").list(match.user_id,{limit:6,sortBy:{column:"created_at",order:"asc"}});
