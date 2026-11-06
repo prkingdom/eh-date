@@ -165,5 +165,5 @@ export default function Discover(){
    </div>
   </div>
   {matchName&&<div role="dialog" aria-modal="true" aria-label="New match" style={{position:"fixed",inset:0,zIndex:200,background:"#310b20c9",display:"grid",placeItems:"center",padding:20}}><div style={{background:"white",borderRadius:28,padding:"38px 24px",maxWidth:420,width:"100%",textAlign:"center",boxShadow:"0 20px 80px #0005"}}><div style={{fontSize:64,color:"#d80621"}}>♥</div><h2 style={{fontSize:34,color:"#d80621",margin:"10px 0"}}>It’s a Match!</h2><p style={{lineHeight:1.6}}>You and {matchName} both said YEH! ♥</p><a href="/matches" style={{display:"block",background:"#d80621",color:"white",padding:14,borderRadius:30,fontWeight:800,marginTop:20}}>See your match</a><a href="/messages" style={{display:"block",border:"2px solid #d80621",color:"#d80621",padding:12,borderRadius:30,fontWeight:800,marginTop:10}}>Start chatting</a><button type="button" onClick={()=>setMatchName("")} style={{border:0,background:"transparent",padding:15,color:"#9b2440",cursor:"pointer"}}>Keep discovering</button></div></div>}
- </main>;
+ </main></>;
 }
