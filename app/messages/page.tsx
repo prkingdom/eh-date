@@ -6,6 +6,7 @@ import SiteNav from "../components/SiteNav";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
 type Match={user_id:string;display_name:string;age:number;city:string|null;matched_at:string;photos_shared:boolean};
+type Summary={other_user_id:string;last_body:string|null;last_sender_id:string|null;last_message_at:string|null;unread_count:number};
 type Message={id:number;user_a:string;user_b:string;sender_id:string;body:string;created_at:string};
 function MatchAvatar({match,size=46}:{match:Match;size?:number}){
  const [photo,setPhoto]=useState("");
@@ -24,9 +25,18 @@ function MatchAvatar({match,size=46}:{match:Match;size?:number}){
 function MessagesContent(){
  const params=useSearchParams(),requested=params.get("with");
  const [userId,setUserId]=useState(""),[matches,setMatches]=useState<Match[]>([]),[selected,setSelected]=useState("");
+ const [summaries,setSummaries]=useState<Summary[]>([]);
  const [mobileChat,setMobileChat]=useState(Boolean(requested)),[messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const bottom=useRef<HTMLDivElement>(null),active=useRef("");
  const current=matches.find(m=>m.user_id===selected);
+ const sortedMatches=[...matches].sort((a,b)=>{const x=summaries.find(s=>s.other_user_id===a.user_id)?.last_message_at||a.matched_at;const y=summaries.find(s=>s.other_user_id===b.user_id)?.last_message_at||b.matched_at;return new Date(y).getTime()-new Date(x).getTime();});
+ const refreshSummaries=useCallback(async()=>{if(!supabase)return;const {data}=await supabase.rpc("my_conversation_summaries");if(data)setSummaries(data as Summary[]);},[]);
+ const markRead=useCallback(async(me:string,other:string)=>{
+  if(!supabase||!me||!other)return;
+  const [a,b]=[me,other].sort();
+  const {error}=await supabase.from("match_messages").update({read_at:new Date().toISOString()}).eq("user_a",a).eq("user_b",b).neq("sender_id",me).is("read_at",null);
+  if(!error){await refreshSummaries();window.dispatchEvent(new Event("ehdate-unread-changed"));}
+ },[refreshSummaries]);
  const fetchMessages=useCallback(async(me:string,other:string)=>{
   if(!supabase||!me||!other)return;
   const [a,b]=[me,other].sort();
@@ -44,9 +54,9 @@ function MessagesContent(){
   const {data,error:matchError}=await supabase.rpc("my_match_profiles");
   if(!live)return;
   if(matchError)setError("Couldn't load matches: "+matchError.message);
-  else {const list=(data??[]) as Match[];setMatches(list);setSelected(list.find(m=>m.user_id===requested)?.user_id||list[0]?.user_id||"");setMobileChat(Boolean(list.find(m=>m.user_id===requested)));}
+  else {const list=(data??[]) as Match[];setMatches(list);setSelected(list.find(m=>m.user_id===requested)?.user_id||list[0]?.user_id||"");setMobileChat(Boolean(list.find(m=>m.user_id===requested)));void refreshSummaries();}
   setLoading(false);
- }void init();return()=>{live=false};},[requested]);
+ }void init();return()=>{live=false};},[requested,refreshSummaries]);
  useEffect(()=>{active.current=selected;setMessages([]);setError("");
   if(!userId||!selected||!supabase)return;
   void fetchMessages(userId,selected);
@@ -56,9 +66,10 @@ function MessagesContent(){
     const row=payload.new as Message;
     if(row.user_b===b&&active.current===selected)setMessages(prev=>prev.some(m=>m.id===row.id)?prev:[...prev,row].sort((x,y)=>x.id-y.id));
    }).subscribe();
-  const interval=setInterval(()=>{void fetchMessages(userId,selected);},5000);
+  const interval=setInterval(()=>{void fetchMessages(userId,selected);void refreshSummaries();},5000);
   return()=>{clearInterval(interval);void supabase?.removeChannel(channel);};
- },[selected,userId,fetchMessages]);
+ },[selected,userId,fetchMessages,refreshSummaries]);
+ useEffect(()=>{if(!userId||!selected)return;if(mobileChat||window.matchMedia("(min-width:651px)").matches)void markRead(userId,selected);},[userId,selected,mobileChat,messages.length,markRead]);
  useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth",block:"end"});},[messages.length,selected]);
  async function send(){
   if(!supabase||!userId||!selected||sending)return;
@@ -67,7 +78,7 @@ function MessagesContent(){
   const [a,b]=[userId,selected].sort();
   const {error:sendError}=await supabase.from("match_messages").insert({user_a:a,user_b:b,sender_id:userId,body});
   if(sendError){setError("Message not sent: "+sendError.message);if(/foreign key|row-level security|permission/i.test(sendError.message)){const {data}=await supabase.rpc("my_match_profiles");setMatches(data??[]);}}
-  else{setDraft("");await fetchMessages(userId,selected);}
+  else{setDraft("");await fetchMessages(userId,selected);await refreshSummaries();}
   setSending(false);
  }
  return <main className={mobileChat?"eh-chat-open":"eh-chat-inbox"} style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#30252b",paddingBottom:85}}>
@@ -94,7 +105,7 @@ function MessagesContent(){
    <div className="eh-chat-layout" style={{display:"grid",gridTemplateColumns:"minmax(145px,260px) minmax(0,1fr)",background:"white",borderRadius:22,overflow:"hidden",minHeight:520,boxShadow:"0 10px 35px #4a15210d"}}>
     <aside className="eh-chat-sidebar" aria-label="Conversations" style={{borderRight:"1px solid #f0e1e5",padding:"16px 8px"}}>
      <h2 style={{fontSize:17,margin:"4px 12px 14px"}}>Your matches</h2>
-     {matches.map(m=><button key={m.user_id} onClick={()=>{setSelected(m.user_id);setMobileChat(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"14px 10px",marginBottom:5,border:0,borderRadius:12,background:selected===m.user_id?"#ffe7eb":"transparent",color:selected===m.user_id?"#b31836":"#4d4147",fontSize:15,fontWeight:selected===m.user_id?800:600,cursor:"pointer",overflowWrap:"anywhere"}}><span style={{display:"flex",alignItems:"center",gap:12}}><MatchAvatar match={m} size={48}/><span>{m.display_name}</span></span></button>)}
+     {sortedMatches.map(m=><button key={m.user_id} onClick={()=>{setSelected(m.user_id);setMobileChat(true);}} style={{display:"block",width:"100%",textAlign:"left",padding:"14px 10px",marginBottom:5,border:0,borderRadius:12,background:selected===m.user_id?"#ffe7eb":"transparent",color:selected===m.user_id?"#b31836":"#4d4147",fontSize:15,fontWeight:selected===m.user_id?800:600,cursor:"pointer",overflowWrap:"anywhere"}}><span style={{display:"flex",alignItems:"center",gap:12}}><MatchAvatar match={m} size={48}/><span style={{flex:1,minWidth:0}}><span style={{display:"flex",justifyContent:"space-between",gap:6,alignItems:"center"}}><strong>{m.display_name}</strong>{Boolean(summaries.find(s=>s.other_user_id===m.user_id)?.unread_count)&&<span style={{background:"#d80621",color:"white",borderRadius:30,fontSize:12,padding:"3px 8px"}}>{summaries.find(s=>s.other_user_id===m.user_id)?.unread_count}</span>}</span><span style={{display:"block",fontSize:12,color:"#897981",fontWeight:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{(()=>{const s=summaries.find(s=>s.other_user_id===m.user_id);return s?.last_body?(s.last_sender_id===userId?"You: ":"")+s.last_body:"Say hello ♥";})()}</span><span style={{fontSize:11,color:"#a08d95",fontWeight:400}}>{(()=>{const s=summaries.find(s=>s.other_user_id===m.user_id);return s?.last_message_at?new Date(s.last_message_at).toLocaleDateString("en-CA",{month:"short",day:"numeric"}):"";})()}</span></span></span></button>)}
     </aside>
     <div className="eh-chat-panel" style={{display:"flex",flexDirection:"column",minWidth:0}}>
      <div className="eh-chat-header" style={{padding:"18px 20px",borderBottom:"1px solid #f0e1e5",fontWeight:800,fontSize:19}}><button className="eh-chat-back" type="button" aria-label="Back to conversations" onClick={()=>setMobileChat(false)} style={{display:"none",alignItems:"center",justifyContent:"center",border:0,background:"#fff0f2",color:"#d80621",borderRadius:30,padding:"8px 13px",marginRight:12,fontWeight:800,cursor:"pointer"}}>← Back</button><span style={{display:"inline-flex",alignItems:"center",gap:10,verticalAlign:"middle"}}>{current&&<MatchAvatar match={current} size={42}/>}<span>{current?.display_name||"Select a match"} <span style={{fontSize:12,color:"#a66575",fontWeight:500}}>♥ Matched</span></span></span></div>
