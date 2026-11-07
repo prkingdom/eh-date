@@ -93,6 +93,18 @@ function MessagesContent(){
  }
  return <main className={mobileChat?"eh-chat-open":"eh-chat-inbox"} style={{minHeight:"100vh",background:"#fff5f5",fontFamily:"Arial,sans-serif",color:"#30252b",paddingBottom:85}}>
   <style>{`@media(max-width:650px){
+.eh-chat-open{padding-bottom:0!important}
+.eh-chat-open .eh-chat-section{padding:0 8px!important}
+.eh-chat-open .eh-chat-layout{border-radius:16px!important}
+.eh-chat-open .eh-chat-panel{height:calc(100dvh - 160px)!important;min-height:300px!important}
+.eh-chat-open .eh-chat-messages{padding:16px 12px!important;gap:10px!important;overscroll-behavior:contain}
+.eh-chat-open .eh-chat-form{padding:10px 10px max(12px,env(safe-area-inset-bottom))!important;background:#fff;position:sticky;bottom:0;z-index:2}
+.eh-chat-open .eh-chat-header{display:flex;align-items:center;flex-wrap:wrap;gap:4px;background:#fff}
+.eh-chat-open .eh-chat-back{margin-right:5px!important}
+.eh-chat-open .eh-chat-header details{width:100%}
+.eh-chat-open .eh-chat-messages>div:not(:last-child){max-width:88%!important}
+.eh-chat-open .eh-chat-form input{background:#fff9fa;outline-color:#d80621}
+
 .eh-chat-open .eh-chat-heading,.eh-chat-open .eh-chat-intro{display:none}
 .eh-chat-layout{display:flex!important;flex-direction:column;min-height:0!important;border-radius:18px!important}
 .eh-chat-inbox .eh-chat-panel{display:none!important}
@@ -122,7 +134,7 @@ function MessagesContent(){
      <div className="eh-chat-messages" aria-label="Chat messages" style={{flex:1,minHeight:340,maxHeight:"min(65vh,600px)",overflowY:"auto",padding:"20px 14px",display:"flex",flexDirection:"column",gap:12}}>
       {messages.length===0&&<p style={{textAlign:"center",color:"#897981",marginTop:75}}>It's a match! Say hello to {current?.display_name} ♥</p>}
       {messages.map(m=><div key={m.id} style={{alignSelf:m.sender_id===userId?"flex-end":"flex-start",maxWidth:"85%"}}>
-       <div style={{background:m.sender_id===userId?"#d80621":"#f4edef",color:m.sender_id===userId?"white":"#30252b",padding:"11px 15px",borderRadius:17,overflowWrap:"anywhere",whiteSpace:"pre-wrap",lineHeight:1.5}}>{m.body}</div>
+       <div style={{background:m.sender_id===userId?"#d80621":"#f4edef",color:m.sender_id===userId?"white":"#30252b",padding:"11px 15px",borderRadius:m.sender_id===userId?"18px 18px 5px 18px":"18px 18px 18px 5px",boxShadow:"0 2px 7px #4a15210a",overflowWrap:"anywhere",whiteSpace:"pre-wrap",lineHeight:1.5}}>{m.body}</div>
        <div style={{fontSize:11,color:"#96858d",marginTop:4,textAlign:m.sender_id===userId?"right":"left"}}>{new Date(m.created_at).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"})}{m.sender_id!==userId&&<button type="button" onClick={()=>{setReportingMessage(m.id);setReportStatus("");}} style={{border:0,background:"transparent",color:"#a72b43",marginLeft:10,textDecoration:"underline",cursor:"pointer",fontSize:11}}>Report message</button>}</div>
       </div>)}
       <div ref={bottom}/>
