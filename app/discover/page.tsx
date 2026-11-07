@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
 import SiteNav from "../components/SiteNav";
+import PhotoReviewBadge from "../components/PhotoReviewBadge";
 import SafetyActions from "../components/SafetyActions";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
@@ -135,7 +136,7 @@ export default function Discover(){
      <div style={{position:"relative",zIndex:1,background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 10px 36px #70132316",transform:`translateX(${dragX}px) rotate(${Math.max(-16,Math.min(16,dragX/35))}deg)`,opacity:flying?0.7:1,transition:dragging?"none":flying?"transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease":"transform .3s cubic-bezier(.2,.8,.2,1)",touchAction:"pan-y",willChange:"transform"}}>
       {(dragging||flying)&&<div style={{textAlign:"center",fontWeight:900,paddingTop:10,color:dragX>0?"#15803d":"#a52640"}}>{dragX>0?"♥ YEH":"✕ NEH"}</div>}
       <div style={{padding:"17px 20px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,minWidth:0,background:"#fff"}}>
-        <h2 style={{margin:0,fontSize:"clamp(25px,5.4vw,32px)",letterSpacing:"-0.8px",lineHeight:1.12,fontWeight:850,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textTransform:"capitalize"}}>{member.display_name}, {member.age}{approvedIds.includes(member.user_id)&&<span title="Profile photos reviewed" aria-label="Profile photos reviewed" style={{color:"#1687e8",fontSize:22,marginLeft:7}}>●✓</span>}</h2>
+        <h2 style={{margin:0,fontSize:"clamp(25px,5.4vw,32px)",letterSpacing:"-0.8px",lineHeight:1.12,fontWeight:850,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textTransform:"capitalize"}}>{member.display_name}, {member.age}{approvedIds.includes(member.user_id)&&<PhotoReviewBadge/>}</h2>
         <span style={{display:"inline-flex",alignItems:"center",gap:5,fontSize:13,fontWeight:650,lineHeight:1.3,color:"#8b5260",minWidth:0,maxWidth:"46%",textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flexShrink:1}}>📍 {[member.city,member.province].filter(Boolean).join(", ")||"Canada"}</span>
        </div>
       <div className="eh-desktop-swipe-actions" style={{display:"flex",gap:12,justifyContent:"center",padding:"12px 20px 16px"}}>
