@@ -35,7 +35,6 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
   <div className="eh-match-info" style={{padding:22}}>
    <h2 className="eh-match-name" style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2>
    <p className="eh-match-location" style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
-   <p className="eh-match-bio" style={{lineHeight:1.6,color:"#655d63"}}>{match.bio||"A new connection on ehdate."}</p>
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
    <a className="eh-match-message" href={"/messages?with="+encodeURIComponent(match.user_id)} style={{display:"inline-block",marginTop:12,marginRight:10,padding:"11px 18px",borderRadius:24,background:"#d80621",color:"white",fontWeight:800,textDecoration:"none"}}>♥ Message</a>
    <button className="eh-match-unmatch" type="button" disabled={busy} onClick={()=>onUnmatch(match.user_id)} style={{marginTop:12,padding:"9px 14px",border:"1px solid #e6c4cc",borderRadius:12,background:"white",color:"#a72b43",fontWeight:700,cursor:busy?"wait":"pointer"}}>{busy?"Please wait…":"Unmatch"}</button>
@@ -50,7 +49,7 @@ export default function MatchesPage(){
  const [unmatching,setUnmatching]=useState<string|null>(null);
  async function unmatch(otherId:string){
   if(!supabase||unmatching)return;
-  if(!window.confirm("Unmatch this person? They will disappear from your Matches, and this cannot be undone."))return;
+  if(!window.confirm("Are you sure you want to unmatch? This person will disappear from your matches, and this cannot be undone."))return;
   setUnmatching(otherId);setError("");
   const {data,error:unmatchError}=await supabase.rpc("unmatch_member",{p_other_user_id:otherId});
   if(unmatchError)setError("Could not unmatch: "+unmatchError.message);
