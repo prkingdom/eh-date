@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isPublic,setIsPublic]=useState(false),[sharePhotos,setSharePhotos]=useState(false),[privacySaving,setPrivacySaving]=useState(false),[hasPhoto,setHasPhoto]=useState(false);
-  const [verificationFile,setVerificationFile]=useState<File|null>(null),[verificationUploading,setVerificationUploading]=useState(false);
+  const [verificationFile,setVerificationFile]=useState<File|null>(null),[verificationSubmitted,setVerificationSubmitted]=useState(false),[verificationUploading,setVerificationUploading]=useState(false);
   const [deleteConfirm,setDeleteConfirm]=useState(""),[deleting,setDeleting]=useState(false),[verificationStatus,setVerificationStatus]=useState("");
   const [emailMatches,setEmailMatches]=useState(false),[emailMessages,setEmailMessages]=useState(false),[emailSaving,setEmailSaving]=useState(false);
   const [excludedNames,setExcludedNames]=useState<string[]>([]),[newExcludedName,setNewExcludedName]=useState(""),[nameSaving,setNameSaving]=useState(false);
@@ -118,10 +118,12 @@ export default function ProfilePage() {
     if(!supabase||!userId||!verificationFile||verificationUploading)return;
     if(!["image/jpeg","image/png","image/webp"].includes(verificationFile.type)||verificationFile.size>5*1024*1024){setMessage("Choose a JPG, PNG, or WebP photo under 5 MB.");return;}
     setVerificationUploading(true);setMessage("");
+    const {data:existing}=await supabase.storage.from("verification-evidence").list(userId,{limit:20});
+    if((existing||[]).some(f=>f.name.startsWith("selfie-"))){setMessage("A verification selfie has already been submitted. Please wait for review.");setVerificationUploading(false);return;}
     const extension=verificationFile.type==="image/png"?"png":verificationFile.type==="image/webp"?"webp":"jpg";
-    const {error}=await supabase.storage.from("verification-evidence").upload(userId+"/selfie-"+Date.now()+"."+extension,verificationFile,{contentType:verificationFile.type,upsert:false});
+    const {error}=await supabase.storage.from("verification-evidence").upload(userId+"/selfie."+extension,verificationFile,{contentType:verificationFile.type,upsert:false});
     setMessage(error?"Could not upload verification photo: "+error.message:"Verification photo submitted privately for administrator review. This does not automatically verify your profile.");
-    if(!error)setVerificationFile(null);
+    if(!error){setVerificationFile(null);setVerificationSubmitted(true);}
     setVerificationUploading(false);
   }
   async function deleteAccount(){
@@ -272,9 +274,9 @@ export default function ProfilePage() {
           <p>Status: <strong>{verificationStatus||"Not requested"}</strong></p>
           {!verificationStatus&&<button type="button" onClick={()=>void requestVerification()} style={{padding:"11px 16px",border:0,borderRadius:12,background:"#d80621",color:"white",fontWeight:800}}>Request verification</button>}
           {verificationStatus==="pending"&&<div style={{marginTop:14,padding:14,background:"#fff8fa",borderRadius:12,border:"1px solid #efd3da"}}>
-            <p style={{fontSize:14,lineHeight:1.5,marginTop:0}}>Upload a clear, recent selfie showing your face, without filters or sunglasses. Only authorized moderators can review it. A selfie alone does not establish your legal identity.</p>
+            <p style={{fontSize:14,lineHeight:1.5,marginTop:0}}>Upload one clear, recent selfie showing your face, without filters or sunglasses. It will be deleted from storage after the review. A selfie alone does not establish your legal identity.</p>
             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setVerificationFile(e.target.files?.[0]||null)} style={{display:"block",maxWidth:"100%",marginBottom:12}}/>
-            <button type="button" disabled={!verificationFile||verificationUploading} onClick={()=>void submitVerificationPhoto()} style={{padding:"11px 16px",border:0,borderRadius:12,background:"#d80621",color:"white",fontWeight:800,opacity:!verificationFile||verificationUploading?.6:1}}>{verificationUploading?"Uploading…":"Submit verification selfie"}</button>
+            <button type="button" disabled={!verificationFile||verificationUploading||verificationSubmitted} onClick={()=>void submitVerificationPhoto()} style={{padding:"11px 16px",border:0,borderRadius:12,background:"#d80621",color:"white",fontWeight:800,opacity:!verificationFile||verificationUploading||verificationSubmitted?.6:1}}>{verificationUploading?"Uploading…":verificationSubmitted?"Selfie submitted":"Submit verification selfie"}</button>
           </div>}
         </div>
         <div style={{background:"white",borderRadius:16,padding:18,marginBottom:22}}>
