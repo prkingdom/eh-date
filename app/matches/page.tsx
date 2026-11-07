@@ -2,6 +2,7 @@
 import {useEffect,useState} from "react";
 import {createClient} from "@supabase/supabase-js";
 import SiteNav from "../components/SiteNav";
+import PhotoReviewBadge from "../components/PhotoReviewBadge";
 import SafetyActions from "../components/SafetyActions";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
@@ -32,7 +33,7 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
     </div>}</>:<span aria-label="No shared photo">♥</span>}
   </div>
   <div style={{padding:22}}>
-   <h2 style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<span title="Profile photos reviewed" aria-label="Profile photos reviewed" style={{color:"#1687e8",fontSize:20,marginLeft:7}}>●✓</span>}</h2>
+   <h2 style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2>
    <p style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
    <p style={{lineHeight:1.6,color:"#655d63"}}>{match.bio||"A new connection on ehdate."}</p>
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
