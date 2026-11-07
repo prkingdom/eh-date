@@ -43,7 +43,8 @@ function MessagesContent(){
   else{setMessages([]);setClearances(old=>({...old,[otherId]:new Date().toISOString()}));setMobileChat(false);setSelected("");await refreshClearances();await refreshSummaries();}
   setClearing(false);
  }
- const refreshSummaries=useCallback(async()=>{if(!supabase)return;const {data}=await supabase.rpc("my_conversation_summaries");if(data)setSummaries(data as Summary[]);},[]);
+ const refreshSummaries=useCallback(async()=>{if(!supabase)return;const {data,error:summaryError}=await supabase.rpc("my_conversation_summaries");if(summaryError)setError("Could not update conversations: "+summaryError.message);else if(data)setSummaries(data as Summary[]);},[]);
+ useEffect(()=>{if(!userId)return;void refreshSummaries();const inboxTimer=setInterval(()=>{void refreshSummaries();},5000);const onVisible=()=>{if(document.visibilityState==="visible")void refreshSummaries();};document.addEventListener("visibilitychange",onVisible);return()=>{clearInterval(inboxTimer);document.removeEventListener("visibilitychange",onVisible);};},[userId,refreshSummaries]);
  const markRead=useCallback(async(me:string,other:string)=>{
   if(!supabase||!me||!other)return;
   const [a,b]=[me,other].sort();
@@ -79,7 +80,7 @@ function MessagesContent(){
     const row=payload.new as Message;
     if(row.user_b===b&&active.current===selected&&new Date(row.created_at).getTime()>new Date(clearances[selected]||0).getTime())setMessages(prev=>prev.some(m=>m.id===row.id)?prev:[...prev,row].sort((x,y)=>x.id-y.id));
    }).subscribe();
-  const interval=setInterval(()=>{void fetchMessages(userId,selected);void refreshSummaries();},5000);
+  const interval=setInterval(()=>{void fetchMessages(userId,selected);},5000);
   return()=>{clearInterval(interval);void supabase?.removeChannel(channel);};
  },[selected,userId,fetchMessages,refreshSummaries,clearances]);
  useEffect(()=>{if(!userId||!selected)return;if(mobileChat||window.matchMedia("(min-width:651px)").matches)void markRead(userId,selected);},[userId,selected,mobileChat,messages.length,markRead]);
