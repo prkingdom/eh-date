@@ -16,7 +16,8 @@ export default function SiteNav({onFiltersClick,filtersOpen}:{onFiltersClick?:()
   await refresh();
   const interval=setInterval(()=>{void refresh();},12000);
   window.addEventListener("ehdate-unread-changed",refresh);
-  cleanup=()=>{clearInterval(interval);window.removeEventListener("ehdate-unread-changed",refresh);};
+  const onVisible=()=>{if(document.visibilityState==="visible")void refresh();};document.addEventListener("visibilitychange",onVisible);
+  cleanup=()=>{clearInterval(interval);window.removeEventListener("ehdate-unread-changed",refresh);document.removeEventListener("visibilitychange",onVisible);};
  }void load();return()=>{active=false;cleanup();};},[path]);
  return <><header style={{background:"#d80621",padding:"15px max(18px,5vw)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
   <a href="/" style={{fontSize:28,fontWeight:800,color:"white",textDecoration:"none"}}>♥ ehdate.</a>
