@@ -27,13 +27,13 @@ function MessagesContent(){
  const params=useSearchParams(),requested=params.get("with");
  const [userId,setUserId]=useState(""),[matches,setMatches]=useState<Match[]>([]),[selected,setSelected]=useState("");
  const [summaries,setSummaries]=useState<Summary[]>([]);
- const [clearances,setClearances]=useState<Record<string,string>>({}),[clearing,setClearing]=useState(false);
+ const [clearances,setClearances]=useState<Record<string,string>>({}),[clearancesLoaded,setClearancesLoaded]=useState(false),[clearing,setClearing]=useState(false);
  const [mobileChat,setMobileChat]=useState(Boolean(requested)),[messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [reportingMessage,setReportingMessage]=useState<number|null>(null),[reportReason,setReportReason]=useState("Harassment or bullying"),[reportDetails,setReportDetails]=useState(""),[reportBusy,setReportBusy]=useState(false),[reportStatus,setReportStatus]=useState("");
  const bottom=useRef<HTMLDivElement>(null),active=useRef("");
  const current=matches.find(m=>m.user_id===selected);
  const sortedMatches=[...matches].filter(m=>{const cleared=clearances[m.user_id];if(!cleared)return true;const last=summaries.find(s=>s.other_user_id===m.user_id)?.last_message_at;return !!last&&new Date(last).getTime()>new Date(cleared).getTime();}).sort((a,b)=>{const x=summaries.find(s=>s.other_user_id===a.user_id)?.last_message_at||a.matched_at;const y=summaries.find(s=>s.other_user_id===b.user_id)?.last_message_at||b.matched_at;return new Date(y).getTime()-new Date(x).getTime();});
- const refreshClearances=useCallback(async()=>{if(!supabase)return;const {data}=await supabase.rpc("my_chat_clearances");if(data)setClearances(Object.fromEntries((data as {other_user_id:string;cleared_at:string}[]).map(x=>[x.other_user_id,x.cleared_at])));},[]);
+ const refreshClearances=useCallback(async()=>{if(!supabase)return;const {data}=await supabase.rpc("my_chat_clearances");if(data){setClearances(Object.fromEntries((data as {other_user_id:string;cleared_at:string}[]).map(x=>[x.other_user_id,x.cleared_at])));setClearancesLoaded(true);}},[]);
  async function clearChat(otherId:string){
   if(!supabase||clearing||!otherId)return;
   if(!window.confirm("Are you sure you want to delete this chat? Your conversation history will be hidden, but you will remain matched and can message this person again. The other person's messages will not be deleted."))return;
@@ -52,13 +52,13 @@ function MessagesContent(){
   if(!error){await refreshSummaries();window.dispatchEvent(new Event("ehdate-unread-changed"));}
  },[refreshSummaries]);
  const fetchMessages=useCallback(async(me:string,other:string)=>{
-  if(!supabase||!me||!other)return;
+  if(!supabase||!me||!other||!clearancesLoaded)return;
   const [a,b]=[me,other].sort();
   const {data,error:readError}=await supabase.from("match_messages").select("id,user_a,user_b,sender_id,body,created_at").eq("user_a",a).eq("user_b",b).order("created_at",{ascending:false}).limit(100);
   if(active.current!==other)return;
   if(readError)setError("Couldn't load messages: "+readError.message);
   else setMessages((data??[]).filter(m=>new Date(m.created_at).getTime()>new Date(clearances[other]||0).getTime()).reverse());
- },[clearances]);
+ },[clearances,clearancesLoaded]);
  useEffect(()=>{let live=true;async function init(){
   if(!supabase){setError("Messaging connection unavailable.");setLoading(false);return;}
   const {data:{user}}=await supabase.auth.getUser();
@@ -72,7 +72,7 @@ function MessagesContent(){
   setLoading(false);
  }void init();return()=>{live=false};},[requested,refreshSummaries,refreshClearances]);
  useEffect(()=>{active.current=selected;setMessages([]);setError("");
-  if(!userId||!selected||!supabase)return;
+  if(!userId||!selected||!supabase||!clearancesLoaded)return;
   void fetchMessages(userId,selected);
   const [a,b]=[userId,selected].sort();
   const channel=supabase.channel("ehdate-chat-"+a+"-"+b)
@@ -82,7 +82,7 @@ function MessagesContent(){
    }).subscribe();
   const interval=setInterval(()=>{void fetchMessages(userId,selected);},5000);
   return()=>{clearInterval(interval);void supabase?.removeChannel(channel);};
- },[selected,userId,fetchMessages,refreshSummaries,clearances]);
+ },[selected,userId,fetchMessages,refreshSummaries,clearances,clearancesLoaded]);
  useEffect(()=>{if(!userId||!selected)return;if(mobileChat||window.matchMedia("(min-width:651px)").matches)void markRead(userId,selected);},[userId,selected,mobileChat,messages.length,markRead]);
  useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth",block:"end"});},[messages.length,selected]);
  async function reportMessage(){
@@ -144,8 +144,8 @@ function MessagesContent(){
     {current?<div className="eh-chat-panel" style={{display:"flex",flexDirection:"column",minWidth:0}}>
      <div className="eh-chat-header" style={{padding:"18px 20px",borderBottom:"1px solid #f0e1e5",fontWeight:800,fontSize:19}}><button className="eh-chat-back" type="button" aria-label="Back to conversations" onClick={()=>setMobileChat(false)} style={{display:"none",alignItems:"center",justifyContent:"center",border:0,background:"#fff0f2",color:"#d80621",borderRadius:30,padding:"8px 13px",marginRight:12,fontWeight:800,cursor:"pointer"}}>← Back</button><span style={{display:"inline-flex",alignItems:"center",gap:10,verticalAlign:"middle"}}>{current&&<MatchAvatar match={current} size={42}/>}<span>{current?.display_name||"Select a match"} <span style={{fontSize:12,color:"#a66575",fontWeight:500}}>♥ Matched</span></span></span>{current&&<details style={{fontSize:12,fontWeight:400,marginTop:8}}><summary style={{cursor:"pointer",color:"#a72b43"}}>Safety · Report or block member</summary><button type="button" disabled={clearing} onClick={()=>void clearChat(current.user_id)} style={{display:"block",margin:"10px 0",border:"1px solid #e6c4cc",background:"#fff",color:"#a72b43",borderRadius:10,padding:"9px 12px",fontWeight:700,cursor:"pointer"}}>{clearing?"Deleting…":"Delete chat (keep match)"}</button><SafetyActions targetId={current.user_id} onBlocked={()=>{setMatches(prev=>prev.filter(m=>m.user_id!==current.user_id));setSelected("");setMobileChat(false);setMessages([]);}}/></details>}</div>
      <div className="eh-chat-messages" aria-label="Chat messages" style={{flex:1,minHeight:340,maxHeight:"min(65vh,600px)",overflowY:"auto",padding:"20px 14px",display:"flex",flexDirection:"column",gap:12}}>
-      {messages.length===0&&<p style={{textAlign:"center",color:"#897981",marginTop:75}}>It's a match! Say hello to {current?.display_name} ♥</p>}
-      {messages.map(m=><div key={m.id} style={{alignSelf:m.sender_id===userId?"flex-end":"flex-start",maxWidth:"85%"}}>
+      {clearancesLoaded&&messages.length===0&&<p style={{textAlign:"center",color:"#897981",marginTop:75}}>It's a match! Say hello to {current?.display_name} ♥</p>}
+      {(clearancesLoaded?messages.filter(m=>new Date(m.created_at).getTime()>new Date(clearances[selected]||0).getTime()):[]).map(m=><div key={m.id} style={{alignSelf:m.sender_id===userId?"flex-end":"flex-start",maxWidth:"85%"}}>
        <div style={{background:m.sender_id===userId?"#d80621":"#f4edef",color:m.sender_id===userId?"white":"#30252b",padding:"11px 15px",borderRadius:m.sender_id===userId?"18px 18px 5px 18px":"18px 18px 18px 5px",boxShadow:"0 2px 7px #4a15210a",overflowWrap:"anywhere",whiteSpace:"pre-wrap",lineHeight:1.5}}>{m.body}</div>
        <div style={{fontSize:11,color:"#96858d",marginTop:4,textAlign:m.sender_id===userId?"right":"left"}}>{new Date(m.created_at).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"})}{m.sender_id!==userId&&<button type="button" onClick={()=>{setReportingMessage(m.id);setReportStatus("");}} style={{border:0,background:"transparent",color:"#a72b43",marginLeft:10,textDecoration:"underline",cursor:"pointer",fontSize:11}}>Report message</button>}</div>
       </div>)}
