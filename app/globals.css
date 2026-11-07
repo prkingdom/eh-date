@@ -8,3 +8,6 @@
 
 .eh-mobile-swipe-hint{display:none}
 @media(max-width:650px){.eh-mobile-swipe-hint{display:block}}
+
+.eh-photo-progress,.eh-photo-tap-zones{display:none!important}
+@media(max-width:650px){.eh-photo-progress,.eh-photo-tap-zones{display:flex!important}}
