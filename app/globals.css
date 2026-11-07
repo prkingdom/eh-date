@@ -5,3 +5,6 @@
 @media(max-width:650px){.eh-header-filters{display:inline-flex!important} .eh-discovery-toolbar{display:none!important} .eh-discovery-content{padding-top:4px!important}}
 
 @media(max-width:650px){.eh-desktop-swipe-actions{display:none!important}}
+
+.eh-mobile-swipe-hint{display:none}
+@media(max-width:650px){.eh-mobile-swipe-hint{display:block}}
