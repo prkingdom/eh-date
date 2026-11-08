@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import {useSearchParams} from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase = url && key ? createClient(url, key) : null;
 const bucket = "profile-photos";
 type Photo = { path: string; preview: string };
-export default function PhotosPage() {
+function PhotosContent() {
+ const fromOnboarding=useSearchParams().get("from")==="onboarding";
  const [userId,setUserId]=useState<string|null>(null);
  const [photos,setPhotos]=useState<Photo[]>([]);
  const [message,setMessage]=useState("");
@@ -59,7 +61,7 @@ export default function PhotosPage() {
    <a href="/" style={{color:"#d80621",textDecoration:"none",fontSize:30,fontWeight:800}}>♥ ehdate.</a>
    <section style={{background:"#fff",borderRadius:24,padding:28,marginTop:32,boxShadow:"0 10px 36px #70001512"}}>
     <h1 style={{fontSize:32,marginTop:0}}>Your profile photos</h1>
-    <p style={{color:"#71666b",lineHeight:1.5}}>Upload up to six photos. Only you can view them while we build profile discovery.</p>
+    <p style={{color:"#71666b",lineHeight:1.5}}>Upload up to six photos. Your photos can appear to eligible members when your profile and photo sharing are enabled.</p>
     {loading?<p>Loading photos…</p>:!userId?<p>Please <a href="/account" style={{color:"#d80621"}}>sign in</a> first.</p>:<>
      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:14,margin:"24px 0"}}>
       {photos.map((photo,i)=><div key={photo.path} style={{borderRadius:14,overflow:"hidden",border:"1px solid #f1d5d9"}}>
@@ -73,8 +75,10 @@ export default function PhotosPage() {
      <p style={{fontSize:13,color:"#786e73"}}>{photos.length} of 6 photos · JPG, PNG or WebP · 5 MB maximum each</p>
     </>}
     {message&&<p role="status" style={{color:"#a60020"}}>{message}</p>}
-    <p style={{marginTop:25}}><a href="/profile" style={{color:"#d80621",fontWeight:700}}>← Back to profile details</a></p>
+    <p style={{marginTop:25}}><a href={fromOnboarding?"/onboarding":"/profile"} style={{color:"#d80621",fontWeight:700}}>{fromOnboarding?"← Continue onboarding":"← Back to profile details"}</a></p>
    </section>
   </div>
  </main>;
 }
+
+export default function PhotosPage(){return <Suspense fallback={<p>Loading photos…</p>}><PhotosContent/></Suspense>}
