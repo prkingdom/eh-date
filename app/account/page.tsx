@@ -44,7 +44,7 @@ export default function AccountPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        setMessage("You're signed in. Your dating profile is coming next.");
+        window.location.assign("/onboarding");
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
@@ -68,8 +68,8 @@ export default function AccountPage() {
             <>
               <h1>Welcome to ehdate!</h1>
               <p>Signed in as {user.email}</p>
-              <p>Your dating profile will be available soon.</p>
-              <button onClick={signOut} style={buttonStyle}>Sign out</button>
+              <p>Complete your profile in three quick steps.</p>
+              <a href="/onboarding" style={{...buttonStyle,display:"inline-block",textDecoration:"none",marginBottom:14}}>Set up my profile →</a><div><button onClick={signOut} style={{...buttonStyle,background:"#fff0f2",color:"#bd1735"}}>Sign out</button></div>
             </>
           ) : (
             <>
