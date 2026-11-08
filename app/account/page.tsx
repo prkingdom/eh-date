@@ -68,7 +68,7 @@ export default function AccountPage() {
             <>
               <h1>Welcome to ehdate!</h1>
               <p>Signed in as {user.email}</p>
-              <p>Complete your profile in three quick steps.</p>
+              <p>Welcome back! Pick up where you left off.</p><a href="/discover" style={{...buttonStyle,display:"block",textAlign:"center",textDecoration:"none",marginBottom:12}}>♥ Go to Discovery</a><a href="/matches" style={{display:"inline-block",color:"#d80621",fontWeight:800,marginRight:18,marginBottom:18}}>My Matches</a><a href="/messages" style={{display:"inline-block",color:"#d80621",fontWeight:800}}>Messages</a><p style={{fontSize:13,color:"#756971"}}>Need to finish or update your profile?</p>
               <a href="/onboarding" style={{...buttonStyle,display:"inline-block",textDecoration:"none",marginBottom:14}}>Set up my profile →</a><div><button onClick={signOut} style={{...buttonStyle,background:"#fff0f2",color:"#bd1735"}}>Sign out</button></div>
             </>
           ) : (
