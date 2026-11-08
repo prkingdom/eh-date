@@ -12,6 +12,7 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
  const [photoIndex,setPhotoIndex]=useState(0);
  const [photoError,setPhotoError]=useState("");
  const [approved,setApproved]=useState(false);
+ const [showBio,setShowBio]=useState(false);
  useEffect(()=>{if(!supabase)return;void supabase.rpc("approved_photo_review_ids",{member_ids:[match.user_id]}).then(({data})=>setApproved((data??[]).some((v:{user_id:string})=>v.user_id===match.user_id)));},[match.user_id]);
  useEffect(()=>{let active=true;async function load(){
   if(!supabase||!match.photos_shared)return;
@@ -35,6 +36,7 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
   <div className="eh-match-info" style={{padding:22}}>
    <h2 className="eh-match-name" style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2>
    <p className="eh-match-location" style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
+   {match.bio&&<><p className="eh-match-bio" style={{fontSize:14,lineHeight:1.55,color:"#74656d",margin:"6px 0 8px",display:"-webkit-box",WebkitLineClamp:showBio?undefined:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{match.bio}</p>{match.bio.length>95&&<button type="button" onClick={()=>setShowBio(v=>!v)} style={{border:0,background:"transparent",padding:0,color:"#b41939",fontWeight:800,cursor:"pointer"}}>{showBio?"Show less":"Read more"}</button>}</>}
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
    <a className="eh-match-message" href={"/messages?with="+encodeURIComponent(match.user_id)} style={{display:"inline-block",marginTop:12,marginRight:10,padding:"11px 18px",borderRadius:24,background:"#d80621",color:"white",fontWeight:800,textDecoration:"none"}}>♥ Message</a>
    <button className="eh-match-unmatch" type="button" disabled={busy} onClick={()=>onUnmatch(match.user_id)} style={{marginTop:12,padding:"9px 14px",border:"1px solid #e6c4cc",borderRadius:12,background:"white",color:"#a72b43",fontWeight:700,cursor:busy?"wait":"pointer"}}>{busy?"Please wait…":"Unmatch"}</button>
@@ -72,8 +74,9 @@ export default function MatchesPage(){
   <SiteNav/>
   <section className="eh-matches-section" style={{maxWidth:1000,margin:"45px auto",padding:"0 20px"}}>
    <h1 className="eh-matches-title" style={{fontSize:38,marginBottom:8}}>Your matches ♥</h1>
+   <p style={{color:"#796a73",lineHeight:1.6}}>You both said YEH! Start a conversation and see where it goes.</p>
    {loading?<p>Loading your matches…</p>:!signedIn?<p><a href="/account" style={{color:"#c6001d",fontWeight:700}}>Sign in</a> to see your matches.</p>:<>
-    <p style={{color:"#b31832",fontWeight:700,fontSize:19}}>{matches.length} {matches.length===1?"match":"matches"}</p>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginTop:14}}><p style={{color:"#b31832",fontWeight:800,fontSize:19,margin:0}}>{matches.length} {matches.length===1?"match":"matches"}</p><a href="/messages" style={{color:"#d80621",fontWeight:800,background:"white",border:"1px solid #f1d5dd",borderRadius:22,padding:"10px 16px"}}>💬 Open messages</a></div>
     {matches.length===0&&!error&&<div style={{background:"white",borderRadius:18,padding:26}}><h2>No matches yet</h2><p>When you and another member both choose YEH, they'll appear here.</p><a href="/discover" style={{color:"#c6001d"}}>Discover members</a></div>}
     <div className="eh-matches-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,280px),1fr))",gap:24,marginTop:24}}>
      {matches.map(match=><MatchCard key={match.user_id} match={match} onUnmatch={id=>void unmatch(id)} onBlocked={id=>setMatches(current=>current.filter(m=>m.user_id!==id))} busy={unmatching===match.user_id}/>)}
