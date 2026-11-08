@@ -16,6 +16,10 @@ type Profile = {
   city: string;
   province: string;
   bio: string;
+  occupation: string;
+  education_level: string;
+  show_occupation: boolean;
+  show_education_level: boolean;
   relationship_goal: string;
   interested_in: string[];
   sexual_orientation: string;
@@ -25,8 +29,9 @@ type Profile = {
   personality_prompts: {question:string;answer:string}[];
 };
 
-const emptyProfile: Profile = { display_name: "", date_of_birth: "", gender: "", city: "", province: "", bio: "", relationship_goal: "", interested_in: [], sexual_orientation: "", show_sexual_orientation: false, show_interested_in: false, interests: [], personality_prompts: [] };
+const emptyProfile: Profile = { display_name: "", date_of_birth: "", gender: "", city: "", province: "", bio: "", occupation: "", education_level: "", show_occupation: false, show_education_level: false, relationship_goal: "", interested_in: [], sexual_orientation: "", show_sexual_orientation: false, show_interested_in: false, interests: [], personality_prompts: [] };
 const promptOptions=["My perfect Sunday looks like…","The way to my heart is…","A green flag I look for…","I get way too excited about…","Together, we could…","My most controversial food opinion…","The quickest way to make me laugh…","I am happiest when…","Two truths and a lie…","A fun fact about me…"];
+const educationOptions=["High school","Trade school / apprenticeship","Some college or university","College diploma","Bachelor’s degree","Master’s degree","Doctorate","Other"];
 const orientationOptions=["Straight","Gay","Lesbian","Bisexual","Pansexual","Asexual","Queer","Questioning","Prefer to self-describe"];
 const interestedOptions=[["Man","Men"],["Woman","Women"],["Non-binary","Non-binary people"]];
 const relationshipGoals=["Long-term relationship","Long-term, open to short","Short-term, open to long","Casual dating","New friends","Figuring it out"];
@@ -61,7 +66,7 @@ export default function ProfilePage() {
       setUserId(authData.user.id);
       setIsModerator(authData.user.app_metadata?.ehdate_role==="moderator");
       const { data, error } = await supabase.from("profiles")
-        .select("display_name,date_of_birth,gender,city,province,bio,relationship_goal,interested_in,sexual_orientation,show_sexual_orientation,show_interested_in,interests,personality_prompts")
+        .select("display_name,date_of_birth,gender,city,province,bio,occupation,education_level,show_occupation,show_education_level,relationship_goal,interested_in,sexual_orientation,show_sexual_orientation,show_interested_in,interests,personality_prompts")
         .eq("user_id", authData.user.id).maybeSingle();
       if (error) setMessage(error.message);
       else if (data) setProfile({
@@ -71,6 +76,10 @@ export default function ProfilePage() {
         city: data.city ?? "",
         province: data.province ?? "",
         bio: data.bio ?? "",
+        occupation: data.occupation ?? "",
+        education_level: data.education_level ?? "",
+        show_occupation: data.show_occupation ?? false,
+        show_education_level: data.show_education_level ?? false,
         relationship_goal: data.relationship_goal ?? "",
         interested_in: data.interested_in ?? [],
         sexual_orientation: data.sexual_orientation ?? "",
@@ -185,6 +194,10 @@ export default function ProfilePage() {
       city: profile.city.trim(),
       province: profile.province,
       bio: profile.bio.trim() || null,
+      occupation: profile.occupation.trim() || null,
+      education_level: profile.education_level || null,
+      show_occupation: profile.show_occupation,
+      show_education_level: profile.show_education_level,
       relationship_goal: profile.relationship_goal || null,
       interested_in: profile.interested_in,
       sexual_orientation: profile.sexual_orientation || null,
@@ -204,7 +217,7 @@ export default function ProfilePage() {
       <a href="/" style={{ color: "#d80621", textDecoration: "none", fontSize: 30, fontWeight: 800 }}>♥ ehdate.</a>
       <section style={{ marginTop: 35, background: "white", padding: "30px 25px", borderRadius: 24, boxShadow: "0 12px 35px #3a1d270c" }}>
         <h1 style={{ marginTop: 0, fontSize: 32 }}>My Profile</h1>
-        {!loading&&userId&&(()=>{const items=[Boolean(profile.display_name&&profile.date_of_birth&&profile.gender&&profile.city&&profile.province),hasPhoto,Boolean(profile.bio.trim()),Boolean(profile.relationship_goal),profile.personality_prompts.some(p=>p.question&&p.answer.trim()),profile.interested_in.length>0];const done=items.filter(Boolean).length;return <div style={{background:"#fff3f5",borderRadius:18,padding:18,marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",gap:10,fontWeight:800,color:"#9c1d38"}}><span>Profile completion</span><span>{Math.round(done/items.length*100)}%</span></div><div role="progressbar" aria-label="Profile completion" aria-valuenow={Math.round(done/items.length*100)} aria-valuemin={0} aria-valuemax={100} style={{height:9,background:"#eed0d6",borderRadius:20,margin:"12px 0",overflow:"hidden"}}><div style={{width:(done/items.length*100)+"%",height:"100%",background:"#d80621",borderRadius:20}}/></div><p style={{fontSize:13,lineHeight:1.5,margin:"8px 0 0",color:"#685961"}}>{done===items.length?"Your profile is looking great!":"Complete your basics, add a photo, bio, relationship goal, personality prompt, and who you want to meet."}</p>{!hasPhoto&&<a href="/profile/photos" style={{display:"inline-block",marginTop:10,color:"#b61937",fontWeight:800}}>Add a profile photo →</a>}</div>})()}
+        {!loading&&userId&&(()=>{const items=[Boolean(profile.display_name&&profile.date_of_birth&&profile.city&&profile.province),hasPhoto,Boolean(profile.bio.trim()),Boolean(profile.relationship_goal),profile.personality_prompts.some(p=>p.question&&p.answer.trim()),profile.interests.length>0];const done=items.filter(Boolean).length;return <div style={{background:"#fff3f5",borderRadius:18,padding:18,marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",gap:10,fontWeight:800,color:"#9c1d38"}}><span>Profile completion</span><span>{Math.round(done/items.length*100)}%</span></div><div role="progressbar" aria-label="Profile completion" aria-valuenow={Math.round(done/items.length*100)} aria-valuemin={0} aria-valuemax={100} style={{height:9,background:"#eed0d6",borderRadius:20,margin:"12px 0",overflow:"hidden"}}><div style={{width:(done/items.length*100)+"%",height:"100%",background:"#d80621",borderRadius:20}}/></div><p style={{fontSize:13,lineHeight:1.5,margin:"8px 0 0",color:"#685961"}}>{done===items.length?"Your profile is looking great!":"Add your basics, a photo, bio, relationship goal, personality prompt and interests. Work and education are optional."}</p>{!hasPhoto&&<a href="/profile/photos" style={{display:"inline-block",marginTop:10,color:"#b61937",fontWeight:800}}>Add a profile photo →</a>}</div>})()}
         <p style={{ color: "#736871", lineHeight: 1.5 }}>Tell us a little about yourself. Your profile visibility and photo sharing are controlled in Privacy settings below.</p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:5,background:"#fff5f5",padding:6,borderRadius:18,margin:"24px 0"}}>{([["edit","✎ Edit profile"],["preview","♡ Preview"],["settings","⚙ Settings"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);setMessage("");}} style={{padding:"13px 4px",border:0,borderRadius:13,cursor:"pointer",fontWeight:800,background:tab===value?"#d80621":"transparent",color:tab===value?"white":"#5c5057"}}>{label}</button>)}</div>
         {loading ? <p>Loading your profile…</p> : !userId ? <p>Please <a href="/account">sign in</a> to create your profile.</p> :
@@ -230,6 +243,14 @@ export default function ProfilePage() {
           <label>Province or territory<select style={fieldStyle} required value={profile.province} onChange={e => setField("province", e.target.value)}>
             <option value="">Select province or territory</option>{provinces.map(([code, name]) => <option value={code} key={code}>{name}</option>)}
           </select></label>
+          <div style={{borderTop:"1px solid #f0e1e4",paddingTop:20}}>
+            <h2 style={{fontSize:21,margin:"0 0 8px"}}>Work & education</h2>
+            <p style={{fontSize:14,color:"#776b72",lineHeight:1.5}}>Both fields are optional. They stay hidden from other members unless you choose to display them.</p>
+            <label style={{display:"block",marginTop:15}}>Occupation (optional)<input style={fieldStyle} maxLength={100} placeholder="e.g. Teacher, Electrician, Entrepreneur" value={profile.occupation} onChange={e=>setField("occupation",e.target.value)}/></label>
+            <label style={{display:"flex",gap:9,alignItems:"center",marginTop:10,fontSize:14}}><input type="checkbox" checked={profile.show_occupation} onChange={e=>setField("show_occupation",e.target.checked)}/> Show my occupation on my profile</label>
+            <label style={{display:"block",marginTop:20}}>Education level (optional)<select style={fieldStyle} value={profile.education_level} onChange={e=>setField("education_level",e.target.value)}><option value="">Prefer not to say</option>{educationOptions.map(level=><option key={level} value={level}>{level}</option>)}</select></label>
+            <label style={{display:"flex",gap:9,alignItems:"center",marginTop:10,fontSize:14}}><input type="checkbox" checked={profile.show_education_level} onChange={e=>setField("show_education_level",e.target.checked)}/> Show my education level on my profile</label>
+          </div>
           <label>About me (optional)<textarea style={{ ...fieldStyle, minHeight: 120, resize: "vertical" }} maxLength={1000} placeholder="A little about you, your interests, and what makes you smile…" value={profile.bio} onChange={e => setField("bio", e.target.value)}/></label>
           <div style={{borderTop:"1px solid #f0e1e4",paddingTop:20}}>
             <h2 style={{fontSize:21,margin:"0 0 8px"}}>What are you looking for? ♥</h2>
@@ -264,7 +285,7 @@ export default function ProfilePage() {
             </div>
           </div>
           <button disabled={saving} type="submit" style={{ border: 0, background: "#d80621", color: "white", padding: 16, borderRadius: 100, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save my profile"}</button>
-        </form></div> : tab==="preview" ? <div style={{borderRadius:18,overflow:"hidden",background:"#fff5f5"}}><div style={{height:"min(60vh,520px)",minHeight:300,background:"linear-gradient(135deg,#ffb9c2,#d80621)",display:"grid",placeItems:"center",position:"relative",overflow:"hidden",isolation:"isolate"}}>{photos.length?<img src={photos[photoIndex]} alt="Your profile photo" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>:<span style={{fontSize:80,color:"white"}}>♥</span>}{photos.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",alignItems:"center",gap:14,background:"#0008",color:"white",borderRadius:25,padding:7}}><button onClick={()=>setPhotoIndex(i=>(i+photos.length-1)%photos.length)} aria-label="Previous photo">‹</button>{photoIndex+1} / {photos.length}<button onClick={()=>setPhotoIndex(i=>(i+1)%photos.length)} aria-label="Next photo">›</button></div>}</div><div style={{padding:22}}><h2 style={{fontSize:28}}>{profile.display_name||"Your name"}{verificationStatus==="approved"&&<PhotoReviewBadge/>}</h2><p style={{color:"#d80621"}}>📍 {[profile.city,profile.province].filter(Boolean).join(", ")}</p><p style={{whiteSpace:"pre-wrap",lineHeight:1.7}}>{profile.bio||"Your bio will appear here."}</p>{profile.relationship_goal&&<p style={{fontWeight:800,color:"#a52640"}}>♥ {profile.relationship_goal}</p>}{profile.show_sexual_orientation&&profile.sexual_orientation&&<p style={{color:"#a52640"}}>Orientation: {profile.sexual_orientation}</p>}{profile.show_interested_in&&profile.interested_in.length>0&&<p style={{color:"#a52640"}}>Interested in: {profile.interested_in.map(v=>v==="Man"?"Men":v==="Woman"?"Women":"Non-binary people").join(", ")}</p>}{profile.interests.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8,margin:"18px 0"}}>{profile.interests.map(interest=><span key={interest} style={{padding:"8px 12px",background:"white",borderRadius:22,fontSize:13,fontWeight:700}}>{interest}</span>)}</div>}{profile.personality_prompts.filter(p=>p.answer.trim()).map((p,i)=><div key={i} style={{background:"white",padding:16,borderRadius:14,margin:"12px 0"}}><strong style={{color:"#b61c37"}}>{p.question}</strong><p style={{lineHeight:1.6,marginBottom:0,whiteSpace:"pre-wrap"}}>{p.answer}</p></div>)}<button onClick={()=>setTab("edit")} style={{border:0,borderRadius:25,padding:14,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>Edit profile</button></div></div> : null}
+        </form></div> : tab==="preview" ? <div style={{borderRadius:18,overflow:"hidden",background:"#fff5f5"}}><div style={{height:"min(60vh,520px)",minHeight:300,background:"linear-gradient(135deg,#ffb9c2,#d80621)",display:"grid",placeItems:"center",position:"relative",overflow:"hidden",isolation:"isolate"}}>{photos.length?<img src={photos[photoIndex]} alt="Your profile photo" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>:<span style={{fontSize:80,color:"white"}}>♥</span>}{photos.length>1&&<div style={{position:"absolute",bottom:12,display:"flex",alignItems:"center",gap:14,background:"#0008",color:"white",borderRadius:25,padding:7}}><button onClick={()=>setPhotoIndex(i=>(i+photos.length-1)%photos.length)} aria-label="Previous photo">‹</button>{photoIndex+1} / {photos.length}<button onClick={()=>setPhotoIndex(i=>(i+1)%photos.length)} aria-label="Next photo">›</button></div>}</div><div style={{padding:22}}><h2 style={{fontSize:28}}>{profile.display_name||"Your name"}{verificationStatus==="approved"&&<PhotoReviewBadge/>}</h2><p style={{color:"#d80621"}}>📍 {[profile.city,profile.province].filter(Boolean).join(", ")}</p><p style={{whiteSpace:"pre-wrap",lineHeight:1.7}}>{profile.bio||"Your bio will appear here."}</p>{profile.show_occupation&&profile.occupation&&<p style={{color:"#8e2338"}}>💼 {profile.occupation}</p>}{profile.show_education_level&&profile.education_level&&<p style={{color:"#8e2338"}}>🎓 {profile.education_level}</p>}{profile.relationship_goal&&<p style={{fontWeight:800,color:"#a52640"}}>♥ {profile.relationship_goal}</p>}{profile.show_sexual_orientation&&profile.sexual_orientation&&<p style={{color:"#a52640"}}>Orientation: {profile.sexual_orientation}</p>}{profile.show_interested_in&&profile.interested_in.length>0&&<p style={{color:"#a52640"}}>Interested in: {profile.interested_in.map(v=>v==="Man"?"Men":v==="Woman"?"Women":"Non-binary people").join(", ")}</p>}{profile.interests.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8,margin:"18px 0"}}>{profile.interests.map(interest=><span key={interest} style={{padding:"8px 12px",background:"white",borderRadius:22,fontSize:13,fontWeight:700}}>{interest}</span>)}</div>}{profile.personality_prompts.filter(p=>p.answer.trim()).map((p,i)=><div key={i} style={{background:"white",padding:16,borderRadius:14,margin:"12px 0"}}><strong style={{color:"#b61c37"}}>{p.question}</strong><p style={{lineHeight:1.6,marginBottom:0,whiteSpace:"pre-wrap"}}>{p.answer}</p></div>)}<button onClick={()=>setTab("edit")} style={{border:0,borderRadius:25,padding:14,background:"#d80621",color:"white",fontWeight:800,cursor:"pointer"}}>Edit profile</button></div></div> : null}
         {message && <p role="status" style={{ color: "#a83b4b", lineHeight: 1.5 }}>{message}</p>}
       {tab==="settings"&&userId&&!loading&&<div style={{marginTop:28,padding:20,borderRadius:16,background:"#fff5f5"}}>
         <h2 style={{marginTop:0,fontSize:22}}>Privacy settings</h2>
