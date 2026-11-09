@@ -63,3 +63,22 @@
 .eh-full-image img{width:100%;height:100%;object-fit:contain;display:block}
 .eh-full-thumbs{max-width:100%}
 @media(max-width:750px){.eh-full-grid{grid-template-columns:minmax(0,1fr)}.eh-full-gallery{max-width:420px;width:100%;margin:0 auto}.eh-full-image{height:auto;aspect-ratio:4/5;max-height:420px}.eh-full-profile{max-width:520px}}
+
+
+/* Match preview: photo and name share a tidy header, never a photo rail. */
+.eh-matches-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr))!important}
+.eh-match-card{height:fit-content}
+.eh-match-card .eh-match-name{line-height:1.2}
+.eh-match-card .eh-match-info{padding-top:10px!important}
+/* Full match profile is a readable profile, not a full-screen photo viewer. */
+.eh-full-profile{max-width:620px!important;margin:16px auto!important;padding:0 16px!important}
+.eh-full-grid{display:flex!important;flex-direction:column!important;gap:14px!important}
+.eh-full-gallery,.eh-full-details{width:100%!important;max-width:100%!important;margin:0!important;min-width:0}
+.eh-full-gallery{order:0}
+.eh-full-details{order:1;padding:24px!important}
+.eh-full-image{width:100%!important;height:auto!important;aspect-ratio:auto!important;max-height:none!important;min-height:0!important;display:flex!important;align-items:center;justify-content:center;background:#f8edf0!important;overflow:hidden}
+.eh-full-image img{width:auto!important;max-width:100%!important;height:auto!important;max-height:340px!important;object-fit:contain!important;display:block!important}
+.eh-full-image button{width:38px;height:38px}
+.eh-full-thumbs{padding:10px 14px!important}
+.eh-full-thumbs button{width:54px!important;height:58px!important;flex:0 0 54px!important}
+@media(max-width:750px){.eh-full-profile{max-width:520px!important}.eh-full-image img{max-height:300px!important}.eh-full-details{padding:20px!important}}
