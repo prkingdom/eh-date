@@ -9,7 +9,6 @@ const supabase=url&&key?createClient(url,key):null;
 type Match={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;matched_at:string;photos_shared:boolean};
 function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:string)=>void;onBlocked:(id:string)=>void;busy:boolean}){
  const [photos,setPhotos]=useState<string[]>([]);
- const [photoIndex,setPhotoIndex]=useState(0);
  const [photoError,setPhotoError]=useState("");
  const [approved,setApproved]=useState(false);
  const [showBio,setShowBio]=useState(false);
@@ -26,12 +25,7 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
  }void load();return()=>{active=false;};},[match.user_id,match.photos_shared]);
  return <article className="eh-match-card" style={{background:"white",borderRadius:22,overflow:"hidden",boxShadow:"0 10px 32px #78102013"}}>
   <div className="eh-match-photo" style={{height:260,position:"relative",background:"linear-gradient(140deg,#ffc2c5,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:84,color:"white"}}>
-   {photos.length?<><img src={photos[photoIndex]} alt={match.display_name+" profile photo "+(photoIndex+1)} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-    {photos.length>1&&<div style={{position:"absolute",bottom:10,left:"50%",transform:"translateX(-50%)",display:"flex",gap:12,alignItems:"center",background:"#0009",borderRadius:22,padding:"5px 12px",fontSize:14,whiteSpace:"nowrap"}}>
-     <button aria-label="Previous photo" onClick={()=>setPhotoIndex(i=>(i+photos.length-1)%photos.length)} style={{background:"transparent",border:0,color:"white",fontSize:24,cursor:"pointer"}}>‹</button>
-     {photoIndex+1} / {photos.length}
-     <button aria-label="Next photo" onClick={()=>setPhotoIndex(i=>(i+1)%photos.length)} style={{background:"transparent",border:0,color:"white",fontSize:24,cursor:"pointer"}}>›</button>
-    </div>}</>:<span aria-label="No shared photo">♥</span>}
+   {photos.length?<img src={photos[0]} alt={match.display_name+" main profile photo"} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span aria-label="No shared photo">♥</span>}
   </div>
   <div className="eh-match-info" style={{padding:22}}>
    <h2 className="eh-match-name" style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2>
