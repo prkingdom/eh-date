@@ -24,21 +24,20 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
   if(active)setPhotos((links??[]).map(p=>p.signedUrl).filter((link):link is string=>typeof link==="string"));
  }void load();return()=>{active=false;};},[match.user_id,match.photos_shared]);
  return <article className="eh-match-card" style={{background:"white",borderRadius:22,overflow:"hidden",boxShadow:"0 10px 32px #78102013"}}>
-  <div style={{padding:"18px 20px 0",display:"flex",alignItems:"center"}}>
-   <a href={"/matches/"+encodeURIComponent(match.user_id)} aria-label={"View "+match.display_name+"'s full profile"} style={{display:"inline-flex",width:84,height:84,borderRadius:"50%",overflow:"hidden",alignItems:"center",justifyContent:"center",background:"linear-gradient(140deg,#ffc2c5,#d80621)",color:"white",fontSize:34,border:"3px solid #ffe3e8",flexShrink:0}}>
+  <div style={{display:"flex",alignItems:"center",gap:14,padding:"18px 18px 0"}}>
+   <a href={"/matches/"+encodeURIComponent(match.user_id)} aria-label={"View "+match.display_name+"'s full profile"} style={{display:"inline-flex",width:64,height:64,borderRadius:"50%",overflow:"hidden",alignItems:"center",justifyContent:"center",background:"linear-gradient(140deg,#ffc2c5,#d80621)",color:"white",fontSize:34,border:"3px solid #ffe3e8",flexShrink:0}}>
     {photos.length?<img src={photos[0]} alt={match.display_name+" profile picture"} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>♥</span>}
    </a>
+   <div style={{minWidth:0}}><h2 className="eh-match-name" style={{margin:"0 0 5px",fontSize:22}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2><p className="eh-match-location" style={{color:"#a52b42",fontWeight:700,margin:0,fontSize:13}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p></div>
   </div>
-  <div className="eh-match-info" style={{padding:22}}>
-   <h2 className="eh-match-name" style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2>
-   <p className="eh-match-location" style={{color:"#a52b42",fontWeight:700,margin:"0 0 12px"}}>📍 {[match.city,match.province].filter(Boolean).join(", ")||"Canada"}</p>
+  <div className="eh-match-info" style={{padding:"10px 18px 18px"}}>
    {match.bio&&<><p className="eh-match-bio" style={{fontSize:14,lineHeight:1.55,color:"#74656d",margin:"6px 0 8px",display:"-webkit-box",WebkitLineClamp:showBio?undefined:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{match.bio}</p>{match.bio.length>95&&<button type="button" onClick={()=>setShowBio(v=>!v)} style={{border:0,background:"transparent",padding:0,color:"#b41939",fontWeight:800,cursor:"pointer"}}>{showBio?"Show less":"Read more"}</button>}</>}
    {photoError&&<p role="status" style={{color:"#a40020",fontSize:13}}>{photoError}</p>}
    <a href={"/matches/"+encodeURIComponent(match.user_id)} style={{display:"inline-block",marginTop:12,marginRight:8,padding:"11px 16px",borderRadius:24,border:"1px solid #e9b9c5",background:"#fff5f7",color:"#ad1a39",fontWeight:800,textDecoration:"none"}}>View full profile</a>
    <a className="eh-match-message" href={"/messages?with="+encodeURIComponent(match.user_id)} style={{display:"inline-block",marginTop:12,marginRight:10,padding:"11px 18px",borderRadius:24,background:"#d80621",color:"white",fontWeight:800,textDecoration:"none"}}>♥ Message</a>
    <button className="eh-match-unmatch" type="button" disabled={busy} onClick={()=>onUnmatch(match.user_id)} style={{marginTop:12,padding:"9px 14px",border:"1px solid #e6c4cc",borderRadius:12,background:"white",color:"#a72b43",fontWeight:700,cursor:busy?"wait":"pointer"}}>{busy?"Please wait…":"Unmatch"}</button>
    <SafetyActions targetId={match.user_id} onBlocked={()=>onBlocked(match.user_id)}/>
-   <p className="eh-match-date" style={{fontSize:13,color:"#82747b",marginTop:16}}>Matched {new Date(match.matched_at).toLocaleDateString("en-CA",{year:"numeric",month:"short",day:"numeric"})}</p>
+   <p className="eh-match-date" style={{fontSize:13,color:"#82747b",marginTop:12,marginBottom:0}}>Matched {new Date(match.matched_at).toLocaleDateString("en-CA",{year:"numeric",month:"short",day:"numeric"})}</p>
   </div>
  </article>;
 }
