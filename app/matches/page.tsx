@@ -24,8 +24,10 @@ function MatchCard({match,onUnmatch,onBlocked,busy}:{match:Match;onUnmatch:(id:s
   if(active)setPhotos((links??[]).map(p=>p.signedUrl).filter((link):link is string=>typeof link==="string"));
  }void load();return()=>{active=false;};},[match.user_id,match.photos_shared]);
  return <article className="eh-match-card" style={{background:"white",borderRadius:22,overflow:"hidden",boxShadow:"0 10px 32px #78102013"}}>
-  <div className="eh-match-photo" style={{height:260,position:"relative",background:"linear-gradient(140deg,#ffc2c5,#d80621)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:84,color:"white"}}>
-   {photos.length?<img src={photos[0]} alt={match.display_name+" main profile photo"} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span aria-label="No shared photo">♥</span>}
+  <div style={{padding:"18px 20px 0",display:"flex",alignItems:"center"}}>
+   <a href={"/matches/"+encodeURIComponent(match.user_id)} aria-label={"View "+match.display_name+"'s full profile"} style={{display:"inline-flex",width:84,height:84,borderRadius:"50%",overflow:"hidden",alignItems:"center",justifyContent:"center",background:"linear-gradient(140deg,#ffc2c5,#d80621)",color:"white",fontSize:34,border:"3px solid #ffe3e8",flexShrink:0}}>
+    {photos.length?<img src={photos[0]} alt={match.display_name+" profile picture"} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<span>♥</span>}
+   </a>
   </div>
   <div className="eh-match-info" style={{padding:22}}>
    <h2 className="eh-match-name" style={{margin:"0 0 8px",fontSize:25}}>{match.display_name}, {match.age}{approved&&<PhotoReviewBadge/>}</h2>
