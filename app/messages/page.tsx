@@ -8,7 +8,7 @@ const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPAB
 const supabase=url&&key?createClient(url,key):null;
 type Match={user_id:string;display_name:string;age:number;city:string|null;matched_at:string;photos_shared:boolean};
 type Summary={other_user_id:string;last_body:string|null;last_sender_id:string|null;last_message_at:string|null;unread_count:number};
-type Message={id:number;user_a:string;user_b:string;sender_id:string;body:string;created_at:string};
+type Message={id:number;user_a:string;user_b:string;sender_id:string;body:string;created_at:string;read_at?:string|null};
 function MatchAvatar({match,size=46}:{match:Match;size?:number}){
  const [photo,setPhoto]=useState("");
  useEffect(()=>{let active=true;async function load(){
@@ -30,6 +30,8 @@ function MessagesContent(){
  const [clearances,setClearances]=useState<Record<string,string>>({}),[clearancesLoaded,setClearancesLoaded]=useState(false),[clearing,setClearing]=useState(false);
  const [mobileChat,setMobileChat]=useState(Boolean(requested)),[messages,setMessages]=useState<Message[]>([]),[draft,setDraft]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [search,setSearch]=useState("");
+ const [readReceipts,setReadReceipts]=useState(false),[otherReceipts,setOtherReceipts]=useState(false),[typing,setTyping]=useState(false);
+ const typingChannel=useRef<any>(null),typingLast=useRef(0),typingReset=useRef<ReturnType<typeof setTimeout>|null>(null);
  const [reportingMessage,setReportingMessage]=useState<number|null>(null),[reportReason,setReportReason]=useState("Harassment or bullying"),[reportDetails,setReportDetails]=useState(""),[reportBusy,setReportBusy]=useState(false),[reportStatus,setReportStatus]=useState("");
  const bottom=useRef<HTMLDivElement>(null),active=useRef("");
  const current=matches.find(m=>m.user_id===selected);
@@ -55,7 +57,7 @@ function MessagesContent(){
  const fetchMessages=useCallback(async(me:string,other:string)=>{
   if(!supabase||!me||!other||!clearancesLoaded)return;
   const [a,b]=[me,other].sort();
-  const {data,error:readError}=await supabase.from("match_messages").select("id,user_a,user_b,sender_id,body,created_at").eq("user_a",a).eq("user_b",b).order("created_at",{ascending:false}).limit(100);
+  const {data,error:readError}=await supabase.from("match_messages").select("id,user_a,user_b,sender_id,body,created_at,read_at").eq("user_a",a).eq("user_b",b).order("created_at",{ascending:false}).limit(100);
   if(active.current!==other)return;
   if(readError)setError("Couldn't load messages: "+readError.message);
   else setMessages((data??[]).filter(m=>new Date(m.created_at).getTime()>new Date(clearances[other]||0).getTime()).reverse());
@@ -66,6 +68,7 @@ function MessagesContent(){
   if(!live)return;
   if(!user){setLoading(false);return;}
   setUserId(user.id);
+  void supabase.from("profiles").select("show_read_receipts").eq("user_id",user.id).maybeSingle().then(({data})=>setReadReceipts(Boolean(data?.show_read_receipts)));
   const {data,error:matchError}=await supabase.rpc("my_match_profiles");
   if(!live)return;
   if(matchError)setError("Couldn't load matches: "+matchError.message);
@@ -74,6 +77,8 @@ function MessagesContent(){
  }void init();return()=>{live=false};},[requested,refreshSummaries,refreshClearances]);
  useEffect(()=>{active.current=selected;setMessages([]);setError("");
   if(!userId||!selected||!supabase||!clearancesLoaded)return;
+  setTyping(false);
+  void supabase.rpc("match_read_receipts_enabled",{p_other_user_id:selected}).then(({data})=>setOtherReceipts(Boolean(data)));
   void fetchMessages(userId,selected);
   const [a,b]=[userId,selected].sort();
   const channel=supabase.channel("ehdate-chat-"+a+"-"+b)
@@ -81,8 +86,10 @@ function MessagesContent(){
     const row=payload.new as Message;
     if(row.user_b===b&&active.current===selected&&new Date(row.created_at).getTime()>new Date(clearances[selected]||0).getTime())setMessages(prev=>prev.some(m=>m.id===row.id)?prev:[...prev,row].sort((x,y)=>x.id-y.id));
    }).subscribe();
+  const typingRoom=supabase.channel("ehdate-typing-"+a+"-"+b,{config:{broadcast:{self:false}}}).on("broadcast",{event:"typing"},({payload})=>{if(active.current===selected&&payload?.sender===selected){setTyping(Boolean(payload?.active));if(typingReset.current)clearTimeout(typingReset.current);if(payload?.active)typingReset.current=setTimeout(()=>setTyping(false),3500);}}).subscribe();
+  typingChannel.current=typingRoom;
   const interval=setInterval(()=>{void fetchMessages(userId,selected);},5000);
-  return()=>{clearInterval(interval);void supabase?.removeChannel(channel);};
+  return()=>{clearInterval(interval);typingChannel.current=null;if(typingReset.current)clearTimeout(typingReset.current);void supabase?.removeChannel(typingRoom);void supabase?.removeChannel(channel);};
  },[selected,userId,fetchMessages,refreshSummaries,clearances,clearancesLoaded]);
  useEffect(()=>{if(!userId||!selected)return;if(mobileChat||window.matchMedia("(min-width:651px)").matches)void markRead(userId,selected);},[userId,selected,mobileChat,messages.length,markRead]);
  useEffect(()=>{bottom.current?.scrollIntoView({behavior:"smooth",block:"end"});},[messages.length,selected]);
@@ -94,6 +101,8 @@ function MessagesContent(){
   else{setReportStatus("Message reported privately. Thank you.");setReportingMessage(null);setReportDetails("");}
   setReportBusy(false);
  }
+ function updateDraft(value:string){setDraft(value);if(!typingChannel.current||!userId)return;const now=Date.now();if(now-typingLast.current>1300){typingLast.current=now;void typingChannel.current.send({type:"broadcast",event:"typing",payload:{sender:userId,active:Boolean(value.trim())}});}}
+ async function toggleReceipts(){if(!supabase||!userId)return;const next=!readReceipts;const {error}=await supabase.from("profiles").update({show_read_receipts:next}).eq("user_id",userId);if(error)setError("Could not save read receipt preference: "+error.message);else setReadReceipts(next);}
  async function send(){
   if(!supabase||!userId||!selected||sending)return;
   const body=draft.trim();if(!body||body.length>2000)return;
@@ -148,8 +157,9 @@ function MessagesContent(){
       {clearancesLoaded&&messages.length===0&&<div style={{textAlign:"center",color:"#897981",margin:"auto 0",padding:"30px 10px"}}><div style={{fontSize:42,color:"#d80621"}}>♥</div><h3 style={{color:"#34252c",marginBottom:6}}>You and {current?.display_name} matched!</h3><p style={{fontSize:14,lineHeight:1.6}}>Break the ice with a message, or try a conversation starter.</p><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",marginTop:18}}>{["Hey! How’s your week going? 😊","What’s your ideal weekend?","Coffee or a walk for a first date? ☕"].map(text=><button key={text} type="button" onClick={()=>setDraft(text)} style={{border:"1px solid #efc8d2",background:"white",borderRadius:22,padding:"10px 13px",color:"#a52640",fontWeight:700,cursor:"pointer",fontSize:13}}>{text}</button>)}</div></div>}
       {(clearancesLoaded?messages.filter(m=>new Date(m.created_at).getTime()>new Date(clearances[selected]||0).getTime()):[]).map(m=><div key={m.id} style={{alignSelf:m.sender_id===userId?"flex-end":"flex-start",maxWidth:"85%"}}>
        <div style={{background:m.sender_id===userId?"#d80621":"#f4edef",color:m.sender_id===userId?"white":"#30252b",padding:"11px 15px",borderRadius:m.sender_id===userId?"18px 18px 5px 18px":"18px 18px 18px 5px",boxShadow:"0 2px 7px #4a15210a",overflowWrap:"anywhere",whiteSpace:"pre-wrap",lineHeight:1.5}}>{m.body}</div>
-       <div style={{fontSize:11,color:"#96858d",marginTop:4,textAlign:m.sender_id===userId?"right":"left"}}>{new Date(m.created_at).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"})}{m.sender_id!==userId&&<button type="button" onClick={()=>{setReportingMessage(m.id);setReportStatus("");}} style={{border:0,background:"transparent",color:"#a72b43",marginLeft:10,textDecoration:"underline",cursor:"pointer",fontSize:11}}>Report message</button>}</div>
+       <div style={{fontSize:11,color:"#96858d",marginTop:4,textAlign:m.sender_id===userId?"right":"left"}}>{new Date(m.created_at).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"})}{m.sender_id===userId&&otherReceipts&&m.read_at&&<span style={{marginLeft:6,color:"#b51e3e",fontWeight:700}}>✓ Read</span>}{m.sender_id!==userId&&<button type="button" onClick={()=>{setReportingMessage(m.id);setReportStatus("");}} style={{border:0,background:"transparent",color:"#a72b43",marginLeft:10,textDecoration:"underline",cursor:"pointer",fontSize:11}}>Report message</button>}</div>
       </div>)}
+      {typing&&<p role="status" style={{fontSize:12,color:"#a62b45",margin:"0 0 3px 8px"}}>{current?.display_name} is typing …</p>}
       <div ref={bottom}/>
      </div>
      {reportingMessage!==null&&<div style={{padding:14,background:"#fff1f3",borderTop:"1px solid #f0d5dc"}}>
@@ -159,8 +169,9 @@ function MessagesContent(){
       <div style={{display:"flex",gap:12,marginTop:8}}><button type="button" disabled={reportBusy} onClick={()=>void reportMessage()} style={{background:"#d80621",color:"white",border:0,borderRadius:20,padding:"9px 14px",fontWeight:700}}>{reportBusy?"Submitting…":"Submit report"}</button><button type="button" onClick={()=>setReportingMessage(null)} style={{border:0,background:"transparent"}}>Cancel</button></div>
      </div>}
      {reportStatus&&<p role="status" style={{padding:"0 14px",color:"#9b1c39"}}>{reportStatus}</p>}
+     <label style={{display:"flex",alignItems:"center",gap:8,padding:"8px 15px",fontSize:12,color:"#806a75"}}><input type="checkbox" checked={readReceipts} onChange={()=>void toggleReceipts()}/> Share my read receipts (off by default)</label>
      <form className="eh-chat-form" onSubmit={e=>{e.preventDefault();void send();}} style={{display:"flex",gap:9,padding:14,borderTop:"1px solid #f0e1e5"}}>
-      <input aria-label="Write a message" value={draft} onChange={e=>setDraft(e.target.value)} maxLength={2000} placeholder="Write a message…" style={{flex:1,minWidth:0,border:"1px solid #e8d5dc",borderRadius:25,padding:"13px 15px",fontSize:16}}/>
+      <input aria-label="Write a message" value={draft} onChange={e=>updateDraft(e.target.value)} maxLength={2000} placeholder="Write a message…" style={{flex:1,minWidth:0,border:"1px solid #e8d5dc",borderRadius:25,padding:"13px 15px",fontSize:16}}/>
       <button type="submit" disabled={sending||!draft.trim()} style={{background:"#d80621",color:"white",border:0,borderRadius:25,padding:"12px 17px",fontWeight:800,cursor:"pointer",opacity:(sending||!draft.trim())?0.6:1}}>{sending?"…":"Send"}</button>
      </form><div style={{textAlign:"right",padding:"0 17px 9px",fontSize:11,color:"#a18d96"}}>{draft.length} / 2000 characters</div>
     </div>:<div className="eh-chat-panel" style={{display:"flex",alignItems:"center",justifyContent:"center",padding:28,color:"#897981",textAlign:"center"}}>Select a conversation to read or send messages.</div>}
