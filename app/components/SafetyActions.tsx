@@ -5,7 +5,7 @@ import {createClient} from "@supabase/supabase-js";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
-const reasons=[{value:"harassment",label:"Harassment or bullying"},{value:"fake_profile",label:"Fake profile or impersonation"},{value:"inappropriate_content",label:"Inappropriate photos or content"},{value:"other",label:"Spam or scam"},{value:"underage",label:"Underage member"},{value:"other",label:"Other"}];
+const reasons=[{value:"harassment",label:"Harassment or bullying"},{value:"fake_profile",label:"Fake profile or impersonation"},{value:"inappropriate_content",label:"Inappropriate photos or content"},{value:"underage",label:"Underage member"},{value:"other",label:"Spam, scam, or other"}];
 export default function SafetyActions({targetId,onBlocked}:{targetId:string;onBlocked:()=>void}){
  const [open,setOpen]=useState(false);
  const [reason,setReason]=useState(reasons[0].value);
