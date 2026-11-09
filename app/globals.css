@@ -82,3 +82,12 @@
 .eh-full-thumbs{padding:10px 14px!important}
 .eh-full-thumbs button{width:54px!important;height:58px!important;flex:0 0 54px!important}
 @media(max-width:750px){.eh-full-profile{max-width:520px!important}.eh-full-image img{max-height:300px!important}.eh-full-details{padding:20px!important}}
+
+/* Final mobile profile presentation: identity first, restrained photo gallery below. */
+.eh-full-profile{max-width:600px!important}
+.eh-full-details{order:0!important;box-shadow:none!important;border-radius:20px!important}
+.eh-full-gallery{order:1!important;box-shadow:none!important;border-radius:20px!important}
+.eh-full-image{height:auto!important;min-height:0!important;max-height:340px!important;aspect-ratio:auto!important;background:#f8edf0!important}
+.eh-full-image img{max-height:340px!important;max-width:100%!important;width:auto!important;height:auto!important;object-fit:contain!important}
+.eh-full-details h1{font-size:clamp(26px,6vw,36px)!important}
+@media(max-width:750px){.eh-full-image{max-height:280px!important}.eh-full-image img{max-height:280px!important}.eh-full-details{padding:20px!important}.eh-full-profile{padding:0 14px!important}}
