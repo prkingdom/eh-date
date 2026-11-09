@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useState} from "react";
+import {Suspense,useEffect,useState} from "react";
 import {useParams,useSearchParams} from "next/navigation";
 import {createClient} from "@supabase/supabase-js";
 import SiteNav from "../../components/SiteNav";
@@ -8,7 +8,7 @@ import SafetyActions from "../../components/SafetyActions";
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase=url&&key?createClient(url,key):null;
 type Profile={user_id:string;display_name:string;age:number;city:string|null;province:string|null;bio:string|null;gender:string|null;relationship_goal:string|null;interests:string[]|null;personality_prompts:{question:string;answer:string}[]|null;sexual_orientation:string|null;interested_in:string[]|null;occupation:string|null;education_level:string|null;photos_shared:boolean};
-export default function MatchProfile(){
+function MatchProfileContent(){
  const params=useParams(),search=useSearchParams(),id=String(params.id||"");
  const [profile,setProfile]=useState<Profile|null>(null),[photos,setPhotos]=useState<string[]>([]),[index,setIndex]=useState(0),[approved,setApproved]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(""),[blocked,setBlocked]=useState(false);
  const back=search.get("from")==="messages"?"/messages?with="+encodeURIComponent(id):"/matches";
@@ -48,3 +48,5 @@ export default function MatchProfile(){
   </section></div>{error&&<p role="status">{error}</p>}</>}
  </div></main>;
 }
+
+export default function MatchProfile(){return <Suspense fallback={<main style={{padding:30}}>Loading profile…</main>}><MatchProfileContent/></Suspense>;}
