@@ -103,3 +103,10 @@
 .eh-full-identity-text .eh-full-location{margin:5px 0 0!important;font-size:13px}
 .eh-full-identity-text .eh-full-kicker{font-size:11px;letter-spacing:1px}
 @media(max-width:390px){.eh-full-avatar{width:52px;height:52px;flex-basis:52px}.eh-full-identity{gap:10px!important}.eh-full-identity-text h1{font-size:22px!important}}
+
+/* Match card reset: previous mobile grid forced the name into a 1-character column. */
+.eh-matches-grid .eh-match-card{display:block!important;grid-template-columns:none!important;min-height:0!important;width:100%;min-width:0;box-sizing:border-box}
+.eh-matches-grid .eh-match-card .eh-match-name{white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important;writing-mode:horizontal-tb!important;font-size:22px!important;line-height:1.25!important}
+.eh-matches-grid .eh-match-card .eh-match-location{white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important}
+.eh-matches-grid .eh-match-card .eh-match-info{padding:10px 18px 18px!important;min-width:0!important}
+@media(max-width:650px){.eh-matches-grid{grid-template-columns:minmax(0,1fr)!important}.eh-matches-grid .eh-match-card{display:block!important}}
